@@ -1,0 +1,420 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A100000001 /* FuelApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000001; };
+		A100000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000002; };
+		A100000003 /* FoodItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000003; };
+		A100000004 /* Meal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000004; };
+		A100000005 /* DayLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000005; };
+		A100000006 /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000006; };
+		A100000007 /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000007; };
+		A100000008 /* NutritionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000008; };
+		A100000009 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000009; };
+		A100000010 /* LogMealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000010; };
+		A100000011 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000011; };
+		A100000012 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000012; };
+		A100000013 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000013; };
+		A100000014 /* MacroProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000014; };
+		A100000015 /* MealRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000015; };
+		A100000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B100000016; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B100000001 /* FuelApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuelApp.swift; sourceTree = "<group>"; };
+		B100000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B100000003 /* FoodItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodItem.swift; sourceTree = "<group>"; };
+		B100000004 /* Meal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meal.swift; sourceTree = "<group>"; };
+		B100000005 /* DayLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayLog.swift; sourceTree = "<group>"; };
+		B100000006 /* UserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettings.swift; sourceTree = "<group>"; };
+		B100000007 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
+		B100000008 /* NutritionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEngine.swift; sourceTree = "<group>"; };
+		B100000009 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		B100000010 /* LogMealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogMealView.swift; sourceTree = "<group>"; };
+		B100000011 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		B100000012 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B100000013 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		B100000014 /* MacroProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroProgressBar.swift; sourceTree = "<group>"; };
+		B100000015 /* MealRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealRow.swift; sourceTree = "<group>"; };
+		B100000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C100000001 /* Fuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D100000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E100000001 = {
+			isa = PBXGroup;
+			children = (
+				E100000002 /* Fuel */,
+				E100000099 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E100000002 /* Fuel */ = {
+			isa = PBXGroup;
+			children = (
+				E100000003 /* App */,
+				E100000004 /* Models */,
+				E100000005 /* Services */,
+				E100000006 /* Features */,
+				E100000007 /* Shared */,
+				E100000008 /* Resources */,
+			);
+			path = Fuel;
+			sourceTree = "<group>";
+		};
+		E100000003 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B100000001 /* FuelApp.swift */,
+				B100000002 /* ContentView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E100000004 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B100000003 /* FoodItem.swift */,
+				B100000004 /* Meal.swift */,
+				B100000005 /* DayLog.swift */,
+				B100000006 /* UserSettings.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E100000005 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B100000007 /* ClaudeService.swift */,
+				B100000008 /* NutritionEngine.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		E100000006 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				E100000010 /* Today */,
+				E100000011 /* LogMeal */,
+				E100000012 /* History */,
+				E100000013 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		E100000007 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B100000013 /* Theme.swift */,
+				E100000014 /* Components */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		E100000008 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B100000016 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		E100000010 /* Today */ = {
+			isa = PBXGroup;
+			children = (
+				B100000009 /* TodayView.swift */,
+			);
+			path = Today;
+			sourceTree = "<group>";
+		};
+		E100000011 /* LogMeal */ = {
+			isa = PBXGroup;
+			children = (
+				B100000010 /* LogMealView.swift */,
+			);
+			path = LogMeal;
+			sourceTree = "<group>";
+		};
+		E100000012 /* History */ = {
+			isa = PBXGroup;
+			children = (
+				B100000011 /* HistoryView.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
+		E100000013 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				B100000012 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		E100000014 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				B100000014 /* MacroProgressBar.swift */,
+				B100000015 /* MealRow.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		E100000099 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C100000001 /* Fuel.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F100000001 /* Fuel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = G100000003 /* Build configuration list for PBXNativeTarget "Fuel" */;
+			buildPhases = (
+				F100000002 /* Sources */,
+				D100000001 /* Frameworks */,
+				F100000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Fuel;
+			productName = Fuel;
+			productReference = C100000001 /* Fuel.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		H100000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					F100000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = G100000001 /* Build configuration list for PBXProject "Fuel" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E100000001;
+			productRefGroup = E100000099 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F100000001 /* Fuel */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F100000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000016 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F100000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000001 /* FuelApp.swift in Sources */,
+				A100000002 /* ContentView.swift in Sources */,
+				A100000003 /* FoodItem.swift in Sources */,
+				A100000004 /* Meal.swift in Sources */,
+				A100000005 /* DayLog.swift in Sources */,
+				A100000006 /* UserSettings.swift in Sources */,
+				A100000007 /* ClaudeService.swift in Sources */,
+				A100000008 /* NutritionEngine.swift in Sources */,
+				A100000009 /* TodayView.swift in Sources */,
+				A100000010 /* LogMealView.swift in Sources */,
+				A100000011 /* HistoryView.swift in Sources */,
+				A100000012 /* SettingsView.swift in Sources */,
+				A100000013 /* Theme.swift in Sources */,
+				A100000014 /* MacroProgressBar.swift in Sources */,
+				A100000015 /* MealRow.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		G100000010 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		G100000011 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		G100000020 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Fuel;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fuel uses your camera to photograph meals for nutritional analysis.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Fuel uses your location to remind you to log meals when you're in the kitchen.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fuel uses your microphone for voice meal logging.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Fuel uses speech recognition to transcribe your voice meal descriptions.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.careid.fuel;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		G100000021 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Fuel;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fuel uses your camera to photograph meals for nutritional analysis.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Fuel uses your location to remind you to log meals when you're in the kitchen.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fuel uses your microphone for voice meal logging.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Fuel uses speech recognition to transcribe your voice meal descriptions.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.careid.fuel;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		G100000001 /* Build configuration list for PBXProject "Fuel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				G100000010 /* Debug */,
+				G100000011 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		G100000003 /* Build configuration list for PBXNativeTarget "Fuel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				G100000020 /* Debug */,
+				G100000021 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = H100000001 /* Project object */;
+}
