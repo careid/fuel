@@ -15,7 +15,9 @@ struct HistoryView: View {
                     )
                 } else {
                     ForEach(allDays, id: \.dateString) { day in
-                        dayRow(day)
+                        NavigationLink(destination: DayDetailView(dayLog: day)) {
+                            dayRow(day)
+                        }
                     }
                 }
             }

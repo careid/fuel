@@ -35,6 +35,7 @@
 		A100000026 /* ReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000027 /* ReminderManager.swift */; };
 		A100000027 /* RemindersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000028 /* RemindersView.swift */; };
 		A100000028 /* FuelSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000029 /* FuelSchema.swift */; };
+		A100000029 /* DayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000030 /* DayDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +50,7 @@
 		B100000009 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		B100000010 /* LogMealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogMealView.swift; sourceTree = "<group>"; };
 		B100000011 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		B100000030 /* DayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailView.swift; sourceTree = "<group>"; };
 		B100000012 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B100000013 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		B100000017 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
@@ -191,6 +193,7 @@
 			isa = PBXGroup;
 			children = (
 				B100000011 /* HistoryView.swift */,
+				B100000030 /* DayDetailView.swift */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -316,6 +319,7 @@
 				A100000026 /* ReminderManager.swift in Sources */,
 				A100000027 /* RemindersView.swift in Sources */,
 				A100000028 /* FuelSchema.swift in Sources */,
+				A100000029 /* DayDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -18,6 +18,10 @@ struct LogMealView: View {
 
     private let inputModes: [InputType] = [.text, .photo, .voice, .quickAdd]
 
+    init(defaultDate: Date = .now) {
+        _selectedDate = State(initialValue: defaultDate)
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {

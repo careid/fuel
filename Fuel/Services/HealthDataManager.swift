@@ -32,41 +32,45 @@ final class HealthDataManager: ObservableObject {
         }
     }
 
+    // Convenience: load today
     func load(modelContext: ModelContext) async {
+        await load(for: .now, modelContext: modelContext)
+    }
+
+    // Load (or refresh) the HealthSnapshot for any given date
+    func load(for date: Date, modelContext: ModelContext) async {
         guard Self.isAvailable else { return }
         isLoading = true
         defer { isLoading = false }
 
-        async let steps          = fetchTodaySteps()
-        async let activeCalories = fetchTodayActiveCalories()
+        async let steps          = fetchSteps(for: date)
+        async let activeCalories = fetchActiveCalories(for: date)
         async let weight         = fetchLatestWeight()
         async let rhr            = fetchRestingHeartRate()
-        async let sleep          = fetchLastNightSleep()
-        async let workout        = fetchLatestWorkout()
+        async let sleep          = fetchSleep(nightOf: date)
+        async let workout        = fetchWorkout(on: date)
 
         let (s, ac, w, r, sl, wo) = await (steps, activeCalories, weight, rhr, sleep, workout)
 
-        // If nothing came back the user likely hasn't granted permission
         guard s != nil || ac != nil || w != nil || r != nil || sl != nil || wo != nil else { return }
 
-        // Upsert today's snapshot
-        let todayStr = HealthSnapshot.dateFormatter.string(from: .now)
+        let dateStr = HealthSnapshot.dateFormatter.string(from: date)
         let descriptor = FetchDescriptor<HealthSnapshot>(
-            predicate: #Predicate { $0.dateString == todayStr }
+            predicate: #Predicate { $0.dateString == dateStr }
         )
         let snap: HealthSnapshot
         if let existing = try? modelContext.fetch(descriptor).first {
             snap = existing
         } else {
-            snap = HealthSnapshot()
+            snap = HealthSnapshot(date: date)
             modelContext.insert(snap)
         }
 
-        snap.steps          = s
-        snap.activeCalories = ac
-        snap.weightKg       = w
+        snap.steps            = s
+        snap.activeCalories   = ac
+        snap.weightKg         = w
         snap.restingHeartRate = r
-        snap.sleepSeconds   = sl.map { Int($0) }
+        snap.sleepSeconds     = sl.map { Int($0) }
 
         if let wo {
             snap.workoutType    = wo.workoutActivityType.name
@@ -74,15 +78,17 @@ final class HealthDataManager: ObservableObject {
             let energyStats = wo.statistics(for: HKQuantityType(.activeEnergyBurned))
             snap.workoutCalories = energyStats?.sumQuantity().map { Int($0.doubleValue(for: .kilocalorie())) }
 
-            // Post-workout reminder — fire once per workout session
-            let notifKey = "fuel.lastWorkoutNotif"
-            let lastNotif = UserDefaults.standard.double(forKey: notifKey)
-            if wo.endDate.timeIntervalSince1970 > lastNotif {
-                UserDefaults.standard.set(wo.endDate.timeIntervalSince1970, forKey: notifKey)
-                ReminderManager.shared.sendPostWorkoutReminder(
-                    type: wo.workoutActivityType.name,
-                    calories: snap.workoutCalories
-                )
+            // Post-workout reminder only fires for today's workouts
+            if Calendar.current.isDateInToday(date) {
+                let notifKey = "fuel.lastWorkoutNotif"
+                let lastNotif = UserDefaults.standard.double(forKey: notifKey)
+                if wo.endDate.timeIntervalSince1970 > lastNotif {
+                    UserDefaults.standard.set(wo.endDate.timeIntervalSince1970, forKey: notifKey)
+                    ReminderManager.shared.sendPostWorkoutReminder(
+                        type: wo.workoutActivityType.name,
+                        calories: snap.workoutCalories
+                    )
+                }
             }
         } else {
             snap.workoutType    = nil
@@ -96,24 +102,28 @@ final class HealthDataManager: ObservableObject {
 
     // MARK: - Fetchers
 
-    private func fetchTodaySteps() async -> Int? {
+    private func fetchSteps(for date: Date) async -> Int? {
         await withCheckedContinuation { cont in
-            let type = HKQuantityType(.stepCount)
-            let start = Calendar.current.startOfDay(for: .now)
-            let pred = HKQuery.predicateForSamples(withStart: start, end: .now, options: .strictStartDate)
-            let q = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
+            let cal = Calendar.current
+            let start = cal.startOfDay(for: date)
+            let end = cal.isDateInToday(date) ? Date.now : cal.date(byAdding: .day, value: 1, to: start)!
+            let pred = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+            let q = HKStatisticsQuery(quantityType: HKQuantityType(.stepCount),
+                                      quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
                 cont.resume(returning: stats?.sumQuantity().map { Int($0.doubleValue(for: .count())) })
             }
             store.execute(q)
         }
     }
 
-    private func fetchTodayActiveCalories() async -> Int? {
+    private func fetchActiveCalories(for date: Date) async -> Int? {
         await withCheckedContinuation { cont in
-            let type = HKQuantityType(.activeEnergyBurned)
-            let start = Calendar.current.startOfDay(for: .now)
-            let pred = HKQuery.predicateForSamples(withStart: start, end: .now, options: .strictStartDate)
-            let q = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
+            let cal = Calendar.current
+            let start = cal.startOfDay(for: date)
+            let end = cal.isDateInToday(date) ? Date.now : cal.date(byAdding: .day, value: 1, to: start)!
+            let pred = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+            let q = HKStatisticsQuery(quantityType: HKQuantityType(.activeEnergyBurned),
+                                      quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
                 cont.resume(returning: stats?.sumQuantity().map { Int($0.doubleValue(for: .kilocalorie())) })
             }
             store.execute(q)
@@ -122,9 +132,9 @@ final class HealthDataManager: ObservableObject {
 
     private func fetchLatestWeight() async -> Double? {
         await withCheckedContinuation { cont in
-            let type = HKQuantityType(.bodyMass)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-            let q = HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
+            let q = HKSampleQuery(sampleType: HKQuantityType(.bodyMass),
+                                  predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
                 let kg = (samples?.first as? HKQuantitySample)?.quantity.doubleValue(for: .gramUnit(with: .kilo))
                 cont.resume(returning: kg)
             }
@@ -134,9 +144,9 @@ final class HealthDataManager: ObservableObject {
 
     private func fetchRestingHeartRate() async -> Double? {
         await withCheckedContinuation { cont in
-            let type = HKQuantityType(.restingHeartRate)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-            let q = HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
+            let q = HKSampleQuery(sampleType: HKQuantityType(.restingHeartRate),
+                                  predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
                 let bpm = (samples?.first as? HKQuantitySample)?
                     .quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
                 cont.resume(returning: bpm)
@@ -145,18 +155,19 @@ final class HealthDataManager: ObservableObject {
         }
     }
 
-    private func fetchLastNightSleep() async -> TimeInterval? {
+    private func fetchSleep(nightOf date: Date) async -> TimeInterval? {
         await withCheckedContinuation { cont in
-            guard let sixPmYesterday = Calendar.current.date(
-                byAdding: .hour, value: -18,
-                to: Calendar.current.startOfDay(for: .now)
-            ) else {
+            let cal = Calendar.current
+            guard let sixPmPrior = cal.date(byAdding: .hour, value: -18,
+                                            to: cal.startOfDay(for: date)) else {
                 cont.resume(returning: nil)
                 return
             }
-            let type = HKCategoryType(.sleepAnalysis)
-            let pred = HKQuery.predicateForSamples(withStart: sixPmYesterday, end: .now)
-            let q = HKSampleQuery(sampleType: type, predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
+            let dayStart = cal.startOfDay(for: date)
+            let pred = HKQuery.predicateForSamples(withStart: sixPmPrior, end: dayStart)
+            let q = HKSampleQuery(sampleType: HKCategoryType(.sleepAnalysis),
+                                  predicate: pred, limit: HKObjectQueryNoLimit,
+                                  sortDescriptors: nil) { _, samples, _ in
                 guard let samples = samples as? [HKCategorySample] else {
                     cont.resume(returning: nil)
                     return
@@ -170,17 +181,15 @@ final class HealthDataManager: ObservableObject {
         }
     }
 
-    private func fetchLatestWorkout() async -> HKWorkout? {
+    private func fetchWorkout(on date: Date) async -> HKWorkout? {
         await withCheckedContinuation { cont in
-            let start = Calendar.current.startOfDay(for: .now)
-            let pred = HKQuery.predicateForSamples(withStart: start, end: .now)
+            let cal = Calendar.current
+            let start = cal.startOfDay(for: date)
+            let end = cal.isDateInToday(date) ? Date.now : cal.date(byAdding: .day, value: 1, to: start)!
+            let pred = HKQuery.predicateForSamples(withStart: start, end: end)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-            let q = HKSampleQuery(
-                sampleType: HKObjectType.workoutType(),
-                predicate: pred,
-                limit: 1,
-                sortDescriptors: [sort]
-            ) { _, samples, _ in
+            let q = HKSampleQuery(sampleType: HKObjectType.workoutType(),
+                                  predicate: pred, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
                 cont.resume(returning: samples?.first as? HKWorkout)
             }
             store.execute(q)
