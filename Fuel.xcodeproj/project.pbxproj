@@ -34,6 +34,7 @@
 		A100000025 /* HealthStatsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000025 /* HealthStatsCard.swift */; };
 		A100000026 /* ReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000027 /* ReminderManager.swift */; };
 		A100000027 /* RemindersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000028 /* RemindersView.swift */; };
+		A100000028 /* FuelSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000029 /* FuelSchema.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -65,6 +66,7 @@
 		B100000026 /* Fuel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fuel.entitlements; sourceTree = "<group>"; };
 		B100000027 /* ReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderManager.swift; sourceTree = "<group>"; };
 		B100000028 /* RemindersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersView.swift; sourceTree = "<group>"; };
+		B100000029 /* FuelSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuelSchema.swift; sourceTree = "<group>"; };
 		C100000001 /* Fuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -119,6 +121,7 @@
 				B100000005 /* DayLog.swift */,
 				B100000006 /* UserSettings.swift */,
 				B100000023 /* HealthSnapshot.swift */,
+				B100000029 /* FuelSchema.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -312,6 +315,7 @@
 				A100000025 /* HealthStatsCard.swift in Sources */,
 				A100000026 /* ReminderManager.swift in Sources */,
 				A100000027 /* RemindersView.swift in Sources */,
+				A100000028 /* FuelSchema.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
