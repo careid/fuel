@@ -47,6 +47,10 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Notifications") {
+                    NavigationLink("Reminders") { RemindersView() }
+                }
+
                 Section("About") {
                     LabeledContent("Version", value: "1.0.0")
                     LabeledContent("Model", value: "Claude Sonnet 4.6")

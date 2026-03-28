@@ -3,6 +3,8 @@ import SwiftData
 
 @main
 struct FuelApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -14,5 +16,10 @@ struct FuelApp: App {
             UserSettings.self,
             HealthSnapshot.self,
         ])
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await ReminderManager.shared.requestPermissions() }
+            }
+        }
     }
 }

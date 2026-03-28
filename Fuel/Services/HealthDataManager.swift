@@ -73,6 +73,17 @@ final class HealthDataManager: ObservableObject {
             snap.workoutMinutes = Int(wo.duration / 60)
             let energyStats = wo.statistics(for: HKQuantityType(.activeEnergyBurned))
             snap.workoutCalories = energyStats?.sumQuantity().map { Int($0.doubleValue(for: .kilocalorie())) }
+
+            // Post-workout reminder — fire once per workout session
+            let notifKey = "fuel.lastWorkoutNotif"
+            let lastNotif = UserDefaults.standard.double(forKey: notifKey)
+            if wo.endDate.timeIntervalSince1970 > lastNotif {
+                UserDefaults.standard.set(wo.endDate.timeIntervalSince1970, forKey: notifKey)
+                ReminderManager.shared.sendPostWorkoutReminder(
+                    type: wo.workoutActivityType.name,
+                    calories: snap.workoutCalories
+                )
+            }
         } else {
             snap.workoutType    = nil
             snap.workoutMinutes = nil

@@ -294,5 +294,13 @@ struct TodayView: View {
         let engine = NutritionEngine(modelContext: modelContext)
         todayLog = try? engine.todayLog()
         settings = try? engine.settings()
+
+        guard let log = todayLog, let settings else { return }
+        let rm = ReminderManager.shared
+        rm.reschedule(log: log, settings: settings)
+        rm.updateStreak(hadMealsToday: !log.meals.isEmpty)
+        if settings.geofenceEnabled, let coord = settings.kitchenCoordinate {
+            rm.startGeofence(latitude: coord.latitude, longitude: coord.longitude)
+        }
     }
 }
