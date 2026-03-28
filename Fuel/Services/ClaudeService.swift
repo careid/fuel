@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 final class ClaudeService {
     private let baseURL = URL(string: "https://api.anthropic.com/v1/messages")!
@@ -49,6 +50,25 @@ final class ClaudeService {
             systemPrompt: extractionSystemPrompt,
             userContent: [.text(text)]
         )
+
+        return try await sendExtractionRequest(request)
+    }
+
+    func extractMeal(from image: UIImage, apiKey: String) async throws -> ExtractionResult {
+        guard let jpeg = resizedJPEG(image) else { throw ClaudeError.noTextContent }
+        let base64 = jpeg.base64EncodedString()
+        let request = buildRequest(
+            apiKey: apiKey,
+            systemPrompt: extractionSystemPrompt,
+            userContent: [
+                .image(mediaType: "image/jpeg", base64Data: base64),
+                .text("Identify the food in this image and extract nutrition info using the schema.")
+            ]
+        )
+        return try await sendExtractionRequest(request)
+    }
+
+    private func sendExtractionRequest(_ request: URLRequest) async throws -> ExtractionResult {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateResponse(response)
@@ -151,6 +171,14 @@ extension ClaudeService {
         return stripMarkdownCodeFences(text)
     }
 
+    private func resizedJPEG(_ image: UIImage, maxDimension: CGFloat = 1024) -> Data? {
+        let scale = min(maxDimension / image.size.width, maxDimension / image.size.height, 1.0)
+        let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let resized = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: newSize)) }
+        return resized.jpegData(compressionQuality: 0.75)
+    }
+
     private func stripMarkdownCodeFences(_ text: String) -> String {
         var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if s.hasPrefix("```") {
@@ -203,6 +231,7 @@ struct AnthropicRequest: Encodable {
 
 enum ContentBlock: Encodable {
     case text(String)
+    case image(mediaType: String, base64Data: String)
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -210,11 +239,18 @@ enum ContentBlock: Encodable {
         case .text(let text):
             try container.encode("text", forKey: .type)
             try container.encode(text, forKey: .text)
+        case .image(let mediaType, let base64Data):
+            try container.encode("image", forKey: .type)
+            var src = container.nestedContainer(keyedBy: SourceKeys.self, forKey: .source)
+            try src.encode("base64", forKey: .type)
+            try src.encode(mediaType, forKey: .mediaType)
+            try src.encode(base64Data, forKey: .data)
         }
     }
 
-    private enum CodingKeys: String, CodingKey {
-        case type, text
+    private enum CodingKeys: String, CodingKey { case type, text, source }
+    private enum SourceKeys: String, CodingKey {
+        case type, mediaType = "media_type", data
     }
 }
 

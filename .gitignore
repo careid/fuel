@@ -20,6 +20,7 @@ Pods/
 # Secrets
 .env
 *.env
+Fuel/Shared/Secrets.swift
 
 # OS
 .DS_Store

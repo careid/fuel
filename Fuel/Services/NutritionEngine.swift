@@ -85,8 +85,8 @@ final class NutritionEngine {
         return meal
     }
 
-    func saveRawMeal(text: String, mealType: MealType, date: Date = .now) throws -> Meal {
-        let meal = Meal(timestamp: date, mealType: mealType, items: [], inputType: .text, rawInputText: text)
+    func saveRawMeal(text: String, mealType: MealType, date: Date = .now, inputType: InputType = .text) throws -> Meal {
+        let meal = Meal(timestamp: date, mealType: mealType, items: [], inputType: inputType, rawInputText: text)
         let log = try dayLogOrCreate(for: date)
         log.meals.append(meal)
         try modelContext.save()

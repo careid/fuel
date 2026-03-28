@@ -24,6 +24,10 @@
 		A100000014 /* MacroProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000014 /* MacroProgressBar.swift */; };
 		A100000015 /* MealRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000015 /* MealRow.swift */; };
 		A100000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B100000016 /* Assets.xcassets */; };
+		A100000018 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000018 /* SpeechService.swift */; };
+		A100000019 /* PhotoInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000019 /* PhotoInputView.swift */; };
+		A100000020 /* VoiceInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000020 /* VoiceInputView.swift */; };
+		A100000021 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000021 /* QuickAddView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +48,10 @@
 		B100000014 /* MacroProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroProgressBar.swift; sourceTree = "<group>"; };
 		B100000015 /* MealRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealRow.swift; sourceTree = "<group>"; };
 		B100000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B100000018 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
+		B100000019 /* PhotoInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoInputView.swift; sourceTree = "<group>"; };
+		B100000020 /* VoiceInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputView.swift; sourceTree = "<group>"; };
+		B100000021 /* QuickAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddView.swift; sourceTree = "<group>"; };
 		C100000001 /* Fuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -104,6 +112,7 @@
 			children = (
 				B100000007 /* ClaudeService.swift */,
 				B100000008 /* NutritionEngine.swift */,
+				B100000018 /* SpeechService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -149,6 +158,9 @@
 			isa = PBXGroup;
 			children = (
 				B100000010 /* LogMealView.swift */,
+				B100000019 /* PhotoInputView.swift */,
+				B100000020 /* VoiceInputView.swift */,
+				B100000021 /* QuickAddView.swift */,
 			);
 			path = LogMeal;
 			sourceTree = "<group>";
@@ -271,6 +283,10 @@
 				A100000017 /* Secrets.swift in Sources */,
 				A100000014 /* MacroProgressBar.swift in Sources */,
 				A100000015 /* MealRow.swift in Sources */,
+				A100000018 /* SpeechService.swift in Sources */,
+				A100000019 /* PhotoInputView.swift in Sources */,
+				A100000020 /* VoiceInputView.swift in Sources */,
+				A100000021 /* QuickAddView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,16 +1,22 @@
 import SwiftUI
+import UIKit
 
 struct LogMealView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
+    @State private var inputMode: InputType = .text
     @State private var inputText = ""
+    @State private var capturedImage: UIImage?
+    @State private var voiceTranscript = ""
     @State private var selectedMealType: MealType = .lunch
     @State private var selectedDate: Date = .now
     @State private var isExtracting = false
     @State private var extractionResult: ExtractionResult?
     @State private var error: String?
     @State private var refinementText = ""
+
+    private let inputModes: [InputType] = [.text, .photo, .voice, .quickAdd]
 
     var body: some View {
         NavigationStack {
@@ -46,18 +52,9 @@ struct LogMealView: View {
                     .labelsHidden()
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("What did you eat?")
-                    .font(.headline)
+            inputModePicker
 
-                TextField(
-                    "e.g. Ensure Max, 2 eggs, chipotle bowl chicken",
-                    text: $inputText,
-                    axis: .vertical
-                )
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(3...6)
-            }
+            inputContent
 
             if let error {
                 Text(error)
@@ -103,44 +100,143 @@ struct LogMealView: View {
         }
     }
 
-    private var inputActions: some View {
-        VStack(spacing: 12) {
-            Button {
-                Task { await extract() }
-            } label: {
-                HStack {
-                    if isExtracting {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Image(systemName: "sparkles")
+    private var inputModePicker: some View {
+        HStack(spacing: 0) {
+            ForEach(inputModes, id: \.self) { mode in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        inputMode = mode
                     }
-                    Text(isExtracting ? "Analyzing..." : "Analyze with Claude")
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: modeIcon(for: mode))
+                            .font(.system(size: 16))
+                        Text(modeLabel(for: mode))
+                            .font(.caption2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(
+                        inputMode == mode
+                            ? FuelTheme.calorieColor.opacity(0.15)
+                            : Color.clear
+                    )
+                    .foregroundStyle(
+                        inputMode == mode
+                            ? FuelTheme.calorieColor
+                            : FuelTheme.textSecondary
+                    )
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(inputText.isEmpty ? Color.gray : FuelTheme.calorieColor)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .buttonStyle(.plain)
             }
-            .disabled(inputText.isEmpty || isExtracting)
+        }
+        .background(FuelTheme.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
 
-            Button {
-                Task { await saveRaw() }
-            } label: {
-                Text("Save Entry")
+    private func modeIcon(for mode: InputType) -> String {
+        switch mode {
+        case .text:     return "text.bubble"
+        case .photo:    return "camera"
+        case .voice:    return "mic"
+        case .quickAdd: return "clock.arrow.circlepath"
+        case .video:    return "video"
+        }
+    }
+
+    private func modeLabel(for mode: InputType) -> String {
+        switch mode {
+        case .text:     return "Type"
+        case .photo:    return "Photo"
+        case .voice:    return "Voice"
+        case .quickAdd: return "Recent"
+        case .video:    return "Video"
+        }
+    }
+
+    @ViewBuilder
+    private var inputContent: some View {
+        switch inputMode {
+        case .text:
+            VStack(alignment: .leading, spacing: 8) {
+                Text("What did you eat?")
+                    .font(.headline)
+                TextField(
+                    "e.g. Ensure Max, 2 eggs, chipotle bowl chicken",
+                    text: $inputText,
+                    axis: .vertical
+                )
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(3...6)
+            }
+        case .photo:
+            PhotoInputView(image: $capturedImage)
+        case .voice:
+            VoiceInputView(transcript: $voiceTranscript)
+        case .quickAdd:
+            QuickAddView { text, mealType in
+                inputText = text
+                selectedMealType = mealType
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    inputMode = .text
+                }
+            }
+        case .video:
+            EmptyView()
+        }
+    }
+
+    private var canAnalyze: Bool {
+        switch inputMode {
+        case .text:  return !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .photo: return capturedImage != nil
+        case .voice: return !voiceTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        default:     return false
+        }
+    }
+
+    @ViewBuilder
+    private var inputActions: some View {
+        if inputMode != .quickAdd {
+            VStack(spacing: 12) {
+                Button {
+                    Task { await extract() }
+                } label: {
+                    HStack {
+                        if isExtracting {
+                            ProgressView().tint(.white)
+                        } else {
+                            Image(systemName: "sparkles")
+                        }
+                        Text(isExtracting ? "Analyzing..." : "Analyze with Claude")
+                    }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(FuelTheme.backgroundSecondary)
-                    .foregroundStyle(inputText.isEmpty ? FuelTheme.textSecondary : FuelTheme.textPrimary)
+                    .background(canAnalyze ? FuelTheme.calorieColor : Color.gray)
+                    .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .disabled(inputText.isEmpty || isExtracting)
+                }
+                .disabled(!canAnalyze || isExtracting)
 
-            Text("Analyze now for macros, or save the entry and process later")
-                .font(.caption)
-                .foregroundStyle(FuelTheme.textSecondary)
-                .multilineTextAlignment(.center)
+                if inputMode == .text || inputMode == .voice {
+                    Button {
+                        Task { await saveRaw() }
+                    } label: {
+                        Text("Save Entry")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(FuelTheme.backgroundSecondary)
+                            .foregroundStyle(canAnalyze ? FuelTheme.textPrimary : FuelTheme.textSecondary)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(!canAnalyze || isExtracting)
+
+                    Text("Analyze now for macros, or save the entry and process later")
+                        .font(.caption)
+                        .foregroundStyle(FuelTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
         }
     }
 
@@ -273,10 +369,19 @@ struct LogMealView: View {
         do {
             let engine = NutritionEngine(modelContext: modelContext)
             let settings = try engine.settings()
-            let result = try await ClaudeService().extractMeal(
-                from: inputText,
-                apiKey: settings.apiKey
-            )
+            let service = ClaudeService()
+
+            let result: ExtractionResult
+            switch inputMode {
+            case .photo:
+                guard let image = capturedImage else { throw ClaudeError.noTextContent }
+                result = try await service.extractMeal(from: image, apiKey: settings.apiKey)
+            case .voice:
+                result = try await service.extractMeal(from: voiceTranscript, apiKey: settings.apiKey)
+            default:
+                result = try await service.extractMeal(from: inputText, apiKey: settings.apiKey)
+            }
+
             extractionResult = result
         } catch {
             self.error = error.localizedDescription
@@ -307,9 +412,15 @@ struct LogMealView: View {
     }
 
     private func saveRaw() async {
+        let text = inputMode == .voice ? voiceTranscript : inputText
         let engine = NutritionEngine(modelContext: modelContext)
         do {
-            _ = try engine.saveRawMeal(text: inputText, mealType: selectedMealType, date: selectedDate)
+            _ = try engine.saveRawMeal(
+                text: text,
+                mealType: selectedMealType,
+                date: selectedDate,
+                inputType: inputMode
+            )
         } catch {
             self.error = error.localizedDescription
             return
@@ -333,12 +444,19 @@ struct LogMealView: View {
             )
         }
 
+        let rawText: String?
+        switch inputMode {
+        case .text:  rawText = inputText
+        case .voice: rawText = voiceTranscript
+        default:     rawText = nil
+        }
+
         let meal = Meal(
             timestamp: selectedDate,
             mealType: selectedMealType,
             items: foodItems,
-            inputType: .text,
-            rawInputText: inputText
+            inputType: inputMode,
+            rawInputText: rawText
         )
 
         do {
