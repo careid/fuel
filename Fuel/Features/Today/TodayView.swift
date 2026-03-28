@@ -9,11 +9,15 @@ struct TodayView: View {
     @State private var settings: UserSettings?
     @State private var processingMealId: UUID?
 
+    @AppStorage("healthKitEnabled") private var healthKitEnabled = false
+    @StateObject private var healthManager = HealthDataManager()
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
                     dailySummaryCard
+                    healthSection
                     mealsList
                     claudeInsightCard
                 }
@@ -30,7 +34,12 @@ struct TodayView: View {
                     }
                 }
             }
-            .onAppear(perform: loadData)
+            .onAppear {
+                loadData()
+                if healthKitEnabled {
+                    Task { await healthManager.load(modelContext: modelContext) }
+                }
+            }
             .onChange(of: showLogMeal) { _, isShowing in
                 if !isShowing { loadData() }
             }
@@ -96,6 +105,52 @@ struct TodayView: View {
                 .foregroundStyle(FuelTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Health Section
+
+    @ViewBuilder
+    private var healthSection: some View {
+        if healthKitEnabled {
+            if let snap = healthManager.snapshot {
+                HealthStatsCard(snapshot: snap)
+            }
+        } else if HealthDataManager.isAvailable {
+            connectHealthCard
+        }
+    }
+
+    private var connectHealthCard: some View {
+        Button {
+            Task {
+                if await healthManager.requestPermissions() {
+                    healthKitEnabled = true
+                    await healthManager.load(modelContext: modelContext)
+                }
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "heart.text.square.fill")
+                    .font(.largeTitle)
+                    .foregroundStyle(.red)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Connect Apple Health")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(FuelTheme.textPrimary)
+                    Text("See sleep, steps & workouts alongside your meals")
+                        .font(.caption)
+                        .foregroundStyle(FuelTheme.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(FuelTheme.textSecondary)
+            }
+            .padding()
+            .background(FuelTheme.backgroundSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Meals List

@@ -28,6 +28,10 @@
 		A100000019 /* PhotoInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000019 /* PhotoInputView.swift */; };
 		A100000020 /* VoiceInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000020 /* VoiceInputView.swift */; };
 		A100000021 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000021 /* QuickAddView.swift */; };
+		A100000022 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B100000022 /* HealthKit.framework */; };
+		A100000023 /* HealthSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000023 /* HealthSnapshot.swift */; };
+		A100000024 /* HealthDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000024 /* HealthDataManager.swift */; };
+		A100000025 /* HealthStatsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000025 /* HealthStatsCard.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +56,11 @@
 		B100000019 /* PhotoInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoInputView.swift; sourceTree = "<group>"; };
 		B100000020 /* VoiceInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputView.swift; sourceTree = "<group>"; };
 		B100000021 /* QuickAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddView.swift; sourceTree = "<group>"; };
+		B100000022 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		B100000023 /* HealthSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSnapshot.swift; sourceTree = "<group>"; };
+		B100000024 /* HealthDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataManager.swift; sourceTree = "<group>"; };
+		B100000025 /* HealthStatsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthStatsCard.swift; sourceTree = "<group>"; };
+		B100000026 /* Fuel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fuel.entitlements; sourceTree = "<group>"; };
 		C100000001 /* Fuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -60,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A100000022 /* HealthKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -92,6 +102,7 @@
 			children = (
 				B100000001 /* FuelApp.swift */,
 				B100000002 /* ContentView.swift */,
+				B100000026 /* Fuel.entitlements */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -103,6 +114,7 @@
 				B100000004 /* Meal.swift */,
 				B100000005 /* DayLog.swift */,
 				B100000006 /* UserSettings.swift */,
+				B100000023 /* HealthSnapshot.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -113,6 +125,7 @@
 				B100000007 /* ClaudeService.swift */,
 				B100000008 /* NutritionEngine.swift */,
 				B100000018 /* SpeechService.swift */,
+				B100000024 /* HealthDataManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -150,6 +163,7 @@
 			isa = PBXGroup;
 			children = (
 				B100000009 /* TodayView.swift */,
+				B100000025 /* HealthStatsCard.swift */,
 			);
 			path = Today;
 			sourceTree = "<group>";
@@ -287,6 +301,9 @@
 				A100000019 /* PhotoInputView.swift in Sources */,
 				A100000020 /* VoiceInputView.swift in Sources */,
 				A100000021 /* QuickAddView.swift in Sources */,
+				A100000023 /* HealthSnapshot.swift in Sources */,
+				A100000024 /* HealthDataManager.swift in Sources */,
+				A100000025 /* HealthStatsCard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -353,12 +370,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Fuel/Fuel.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SJ9Z835G8Y;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Fuel;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Fuel uses your camera to photograph meals for nutritional analysis.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Fuel reads Apple Health data to show your sleep, steps, and workouts alongside nutrition.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Fuel uses your location to remind you to log meals when you're in the kitchen.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fuel uses your microphone for voice meal logging.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Fuel uses speech recognition to transcribe your voice meal descriptions.";
@@ -385,12 +404,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Fuel/Fuel.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SJ9Z835G8Y;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Fuel;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Fuel uses your camera to photograph meals for nutritional analysis.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Fuel reads Apple Health data to show your sleep, steps, and workouts alongside nutrition.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Fuel uses your location to remind you to log meals when you're in the kitchen.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fuel uses your microphone for voice meal logging.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Fuel uses speech recognition to transcribe your voice meal descriptions.";

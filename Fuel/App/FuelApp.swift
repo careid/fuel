@@ -12,6 +12,7 @@ struct FuelApp: App {
             Meal.self,
             FoodItem.self,
             UserSettings.self,
+            HealthSnapshot.self,
         ])
     }
 }
