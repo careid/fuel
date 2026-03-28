@@ -295,18 +295,18 @@ Fuel/
 - [x] Running calorie/protein totals
 - [x] Basic meal list view
 
-### M2: Multi-Modal Input (Week 3-4)
-- [ ] Photo capture → Claude Vision extraction
-- [ ] Voice recording → Apple Speech → text → Claude extraction
-- [ ] Conversational refinement ("actually 8oz salmon")
-- [ ] Quick-add from recent meals
+### M2: Multi-Modal Input ✅ CLOSED
+- [x] Photo capture → Claude Vision extraction
+- [x] Voice recording → Apple Speech → text → Claude extraction
+- [x] Conversational refinement ("actually 8oz salmon")
+- [x] Quick-add from recent meals
 
-### M3: HealthKit Integration (Week 5-6)
-- [ ] HealthKit permission flow
-- [ ] Sleep data display on dashboard
-- [ ] Steps + active calories
-- [ ] Weight from Renpho (via HealthKit)
-- [ ] Daily health snapshot persistence
+### M3: HealthKit Integration ✅ CLOSED
+- [x] HealthKit permission flow
+- [x] Sleep data display on dashboard
+- [x] Steps + active calories
+- [x] Weight from Renpho (via HealthKit)
+- [x] Daily health snapshot persistence
 
 ### M4: Smart Reminders (Week 7-8)
 - [ ] Kitchen geofence setup + monitoring
