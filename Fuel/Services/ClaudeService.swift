@@ -7,7 +7,10 @@ final class ClaudeService {
     private let extractionSystemPrompt = """
         You are a nutrition extraction assistant inside a calorie/protein tracking app.
 
-        When the user describes what they ate, extract each food item with macro estimates.
+        The user is logging what they ate. Inputs are often short — a brand name, a product \
+        name, a quick note. Always extract items and return macros. Never refuse or ask for \
+        clarification instead of extracting. If something is unclear, make your best estimate \
+        and note it.
 
         Respond with ONLY valid JSON matching this schema — no markdown, no explanation:
 
@@ -19,20 +22,25 @@ final class ClaudeService {
               "proteinGrams": "number",
               "carbsGrams": "number",
               "fatGrams": "number",
-              "quantity": "string — e.g. '2 eggs', '1 cup', '6oz'",
+              "quantity": "string — e.g. '2 eggs', '1 cup', '6oz', '1 bottle'",
               "confidence": "high | medium | low"
             }
           ],
-          "notes": "optional string — anything ambiguous or worth mentioning"
+          "notes": "optional string — only for genuinely ambiguous quantities or sizes"
         }
 
         Guidelines:
-        - Estimate portions based on typical servings if not specified
-        - Use USDA data as your baseline for macros
-        - Mark confidence as "low" if you're guessing portion size
-        - Mark confidence as "high" for well-known items like "1 large egg"
-        - If the user says something vague like "a big lunch", ask for clarification in "notes"
-        - Round calories to nearest 5, macros to nearest 0.5g
+        - Inputs can be very short: "Ensure Max", "quest bar", "chipotle bowl", "2 eggs" are \
+          all valid. Extract them as-is using your knowledge of common foods and brands.
+        - For branded products (Ensure, Quest, KIND, Rx Bar, Fairlife, etc.) use the standard \
+          serving size and label macros.
+        - Assume one serving unless a quantity is specified (e.g. "2 Ensure Max" = 2 servings).
+        - Estimate portions based on typical servings if not specified.
+        - Use USDA data as your baseline for generic foods; use label data for branded products.
+        - Mark confidence "high" for well-known branded items or precisely specified quantities.
+        - Mark confidence "low" only when the portion size is genuinely unknown.
+        - Only use "notes" if the quantity is truly ambiguous — not just because the input is short.
+        - Round calories to nearest 5, macros to nearest 0.5g.
         """
 
     func extractMeal(from text: String, apiKey: String) async throws -> ExtractionResult {
@@ -45,10 +53,14 @@ final class ClaudeService {
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateResponse(response)
 
-        let apiResponse = try JSONDecoder().decode(AnthropicResponse.self, from: data)
+        let apiResponse = try decodeAnthropicResponse(data)
         let content = try extractTextContent(from: apiResponse)
 
-        return try JSONDecoder().decode(ExtractionResult.self, from: Data(content.utf8))
+        do {
+            return try JSONDecoder().decode(ExtractionResult.self, from: Data(content.utf8))
+        } catch {
+            throw ClaudeError.badExtractionJSON(raw: content)
+        }
     }
 
     func refineMeal(
@@ -77,10 +89,14 @@ final class ClaudeService {
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateResponse(response)
 
-        let apiResponse = try JSONDecoder().decode(AnthropicResponse.self, from: data)
+        let apiResponse = try decodeAnthropicResponse(data)
         let content = try extractTextContent(from: apiResponse)
 
-        return try JSONDecoder().decode(ExtractionResult.self, from: Data(content.utf8))
+        do {
+            return try JSONDecoder().decode(ExtractionResult.self, from: Data(content.utf8))
+        } catch {
+            throw ClaudeError.badExtractionJSON(raw: content)
+        }
     }
 }
 
@@ -111,6 +127,15 @@ extension ClaudeService {
         return request
     }
 
+    private func decodeAnthropicResponse(_ data: Data) throws -> AnthropicResponse {
+        do {
+            return try JSONDecoder().decode(AnthropicResponse.self, from: data)
+        } catch {
+            let raw = String(data: data, encoding: .utf8) ?? "<binary>"
+            throw ClaudeError.badAPIResponse(raw: raw)
+        }
+    }
+
     private func validateResponse(_ response: URLResponse) throws {
         let httpResponse = response as! HTTPURLResponse
         guard (200...299).contains(httpResponse.statusCode) else {
@@ -119,10 +144,23 @@ extension ClaudeService {
     }
 
     private func extractTextContent(from response: AnthropicResponse) throws -> String {
-        guard let textBlock = response.content.first(where: { $0.type == "text" }) else {
+        guard let textBlock = response.content.first(where: { $0.type == "text" }),
+              let text = textBlock.text else {
             throw ClaudeError.noTextContent
         }
-        return textBlock.text
+        return stripMarkdownCodeFences(text)
+    }
+
+    private func stripMarkdownCodeFences(_ text: String) -> String {
+        var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.hasPrefix("```") {
+            s = s.drop(while: { $0 != "\n" }).dropFirst()
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if s.hasSuffix("```") {
+            s = String(s.dropLast(3)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return s
     }
 }
 
@@ -131,11 +169,15 @@ extension ClaudeService {
 enum ClaudeError: Error, LocalizedError {
     case apiError(statusCode: Int)
     case noTextContent
+    case badAPIResponse(raw: String)
+    case badExtractionJSON(raw: String)
 
     var errorDescription: String? {
         switch self {
         case .apiError(let code): "Claude API error (HTTP \(code))"
         case .noTextContent: "No text content in Claude response"
+        case .badAPIResponse(let raw): "Unexpected API response: \(raw.prefix(300))"
+        case .badExtractionJSON(let raw): "Could not parse Claude's response: \(raw.prefix(300))"
         }
     }
 }
@@ -181,7 +223,7 @@ struct AnthropicResponse: Decodable {
 
     struct ResponseContent: Decodable {
         let type: String
-        let text: String
+        let text: String?
     }
 }
 

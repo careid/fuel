@@ -12,6 +12,19 @@ final class NutritionEngine {
 
     // MARK: - Day Log Management
 
+    func dayLogOrCreate(for date: Date) throws -> DayLog {
+        let dateStr = DayLog.dateFormatter.string(from: date)
+        let descriptor = FetchDescriptor<DayLog>(
+            predicate: #Predicate { $0.dateString == dateStr }
+        )
+        let results = try modelContext.fetch(descriptor)
+        if let existing = results.first { return existing }
+        let newLog = DayLog(date: date)
+        modelContext.insert(newLog)
+        try modelContext.save()
+        return newLog
+    }
+
     func todayLog() throws -> DayLog {
         let todayStr = DayLog.todayString()
         let descriptor = FetchDescriptor<DayLog>(
@@ -72,6 +85,31 @@ final class NutritionEngine {
         return meal
     }
 
+    func saveRawMeal(text: String, mealType: MealType, date: Date = .now) throws -> Meal {
+        let meal = Meal(timestamp: date, mealType: mealType, items: [], inputType: .text, rawInputText: text)
+        let log = try dayLogOrCreate(for: date)
+        log.meals.append(meal)
+        try modelContext.save()
+        return meal
+    }
+
+    func processMeal(_ meal: Meal, apiKey: String) async throws {
+        guard let text = meal.rawInputText, !text.isEmpty else { return }
+        let extraction = try await claudeService.extractMeal(from: text, apiKey: apiKey)
+        meal.items = extraction.items.map { item in
+            FoodItem(
+                name: item.name,
+                calories: item.calories,
+                proteinGrams: item.proteinGrams,
+                carbsGrams: item.carbsGrams,
+                fatGrams: item.fatGrams,
+                quantity: item.quantity,
+                confidence: Confidence(rawValue: item.confidence) ?? .medium
+            )
+        }
+        try modelContext.save()
+    }
+
     func refineMeal(
         _ meal: Meal,
         with refinement: String,
@@ -122,6 +160,10 @@ final class NutritionEngine {
         let results = try modelContext.fetch(descriptor)
 
         if let existing = results.first {
+            if existing.apiKey.isEmpty {
+                existing.apiKey = Secrets.anthropicAPIKey
+                try modelContext.save()
+            }
             return existing
         }
 

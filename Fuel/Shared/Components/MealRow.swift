@@ -2,27 +2,36 @@ import SwiftUI
 
 struct MealRow: View {
     let meal: Meal
+    var isProcessing: Bool = false
+    var onProcess: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
 
     @State private var isExpanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(.spring(duration: 0.25)) {
-                    isExpanded.toggle()
+            if meal.isProcessed {
+                Button {
+                    withAnimation(.spring(duration: 0.25)) {
+                        isExpanded.toggle()
+                    }
+                } label: {
+                    header
                 }
-            } label: {
-                header
-            }
-            .buttonStyle(.plain)
+                .buttonStyle(.plain)
 
-            if isExpanded {
-                itemList
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                if isExpanded {
+                    itemList
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            } else {
+                unprocessedRow
             }
         }
         .padding(.vertical, 8)
     }
+
+    // MARK: - Processed
 
     private var header: some View {
         HStack(spacing: 12) {
@@ -82,9 +91,77 @@ struct MealRow: View {
                         .foregroundStyle(FuelTheme.proteinColor)
                 }
             }
+
+            if let onDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete Meal", systemImage: "trash")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 6)
+            }
         }
         .padding(.leading, 44)
         .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+
+    // MARK: - Unprocessed
+
+    private var unprocessedRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: meal.mealType.icon)
+                .font(.title3)
+                .foregroundStyle(FuelTheme.textSecondary)
+                .frame(width: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(meal.mealType.label)
+                    .font(.headline)
+                    .foregroundStyle(FuelTheme.textSecondary)
+
+                if let raw = meal.rawInputText, !raw.isEmpty {
+                    Text(raw)
+                        .font(.caption)
+                        .foregroundStyle(FuelTheme.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            if isProcessing {
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .padding(.trailing, 4)
+            } else {
+                HStack(spacing: 8) {
+                    if let onProcess {
+                        Button(action: onProcess) {
+                            Label("Process", systemImage: "sparkles")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.purple.opacity(0.12))
+                                .foregroundStyle(.purple)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if let onDelete {
+                        Button(action: onDelete) {
+                            Image(systemName: "trash")
+                                .font(.subheadline)
+                                .foregroundStyle(.red.opacity(0.8))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
     }
 
     private func confidenceColor(_ confidence: Confidence) -> Color {

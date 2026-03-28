@@ -7,6 +7,7 @@ struct TodayView: View {
 
     @State private var todayLog: DayLog?
     @State private var settings: UserSettings?
+    @State private var processingMealId: UUID?
 
     var body: some View {
         NavigationStack {
@@ -105,12 +106,34 @@ struct TodayView: View {
                 Text("Meals")
                     .font(.headline)
                 Spacer()
+                let unprocessedCount = (todayLog?.meals ?? []).filter { !$0.isProcessed }.count
+                if unprocessedCount > 0 {
+                    Button {
+                        Task { await processAll() }
+                    } label: {
+                        Label("Process All (\(unprocessedCount))", systemImage: "sparkles")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.purple.opacity(0.12))
+                            .foregroundStyle(.purple)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(processingMealId != nil)
+                }
             }
 
             if let meals = todayLog?.meals, !meals.isEmpty {
                 let sorted = meals.sorted { $0.timestamp < $1.timestamp }
                 ForEach(sorted, id: \.id) { meal in
-                    MealRow(meal: meal)
+                    MealRow(
+                        meal: meal,
+                        isProcessing: processingMealId == meal.id,
+                        onProcess: { Task { await processMeal(meal) } },
+                        onDelete: { deleteMeal(meal) }
+                    )
                     if meal.id != sorted.last?.id {
                         Divider()
                     }
@@ -122,6 +145,32 @@ struct TodayView: View {
         .padding()
         .background(FuelTheme.backgroundSecondary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func processMeal(_ meal: Meal) async {
+        guard let settings else { return }
+        processingMealId = meal.id
+        let engine = NutritionEngine(modelContext: modelContext)
+        do {
+            try await engine.processMeal(meal, apiKey: settings.apiKey)
+        } catch {
+            // Silently fail — meal stays unprocessed, user can retry
+        }
+        processingMealId = nil
+    }
+
+    private func deleteMeal(_ meal: Meal) {
+        let engine = NutritionEngine(modelContext: modelContext)
+        try? engine.deleteMeal(meal)
+        loadData()
+    }
+
+    private func processAll() async {
+        guard let log = todayLog else { return }
+        let unprocessed = log.meals.filter { !$0.isProcessed }
+        for meal in unprocessed {
+            await processMeal(meal)
+        }
     }
 
     private var emptyMealsState: some View {

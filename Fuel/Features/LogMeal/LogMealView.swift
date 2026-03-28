@@ -6,6 +6,7 @@ struct LogMealView: View {
 
     @State private var inputText = ""
     @State private var selectedMealType: MealType = .lunch
+    @State private var selectedDate: Date = .now
     @State private var isExtracting = false
     @State private var extractionResult: ExtractionResult?
     @State private var error: String?
@@ -36,12 +37,21 @@ struct LogMealView: View {
         VStack(spacing: 20) {
             mealTypePicker
 
+            HStack {
+                Text("Date")
+                    .font(.subheadline)
+                    .foregroundStyle(FuelTheme.textSecondary)
+                Spacer()
+                DatePicker("", selection: $selectedDate, in: ...Date.now, displayedComponents: .date)
+                    .labelsHidden()
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 Text("What did you eat?")
                     .font(.headline)
 
                 TextField(
-                    "e.g. 2 eggs, toast with butter, coffee with cream",
+                    "e.g. Ensure Max, 2 eggs, chipotle bowl chicken",
                     text: $inputText,
                     axis: .vertical
                 )
@@ -115,7 +125,19 @@ struct LogMealView: View {
             }
             .disabled(inputText.isEmpty || isExtracting)
 
-            Text("Claude will estimate calories and macros from your description")
+            Button {
+                Task { await saveRaw() }
+            } label: {
+                Text("Save Entry")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(FuelTheme.backgroundSecondary)
+                    .foregroundStyle(inputText.isEmpty ? FuelTheme.textSecondary : FuelTheme.textPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .disabled(inputText.isEmpty || isExtracting)
+
+            Text("Analyze now for macros, or save the entry and process later")
                 .font(.caption)
                 .foregroundStyle(FuelTheme.textSecondary)
                 .multilineTextAlignment(.center)
@@ -284,6 +306,17 @@ struct LogMealView: View {
         isExtracting = false
     }
 
+    private func saveRaw() async {
+        let engine = NutritionEngine(modelContext: modelContext)
+        do {
+            _ = try engine.saveRawMeal(text: inputText, mealType: selectedMealType, date: selectedDate)
+        } catch {
+            self.error = error.localizedDescription
+            return
+        }
+        dismiss()
+    }
+
     private func saveMeal() async {
         guard let result = extractionResult else { return }
 
@@ -301,6 +334,7 @@ struct LogMealView: View {
         }
 
         let meal = Meal(
+            timestamp: selectedDate,
             mealType: selectedMealType,
             items: foodItems,
             inputType: .text,
@@ -308,7 +342,7 @@ struct LogMealView: View {
         )
 
         do {
-            let log = try engine.todayLog()
+            let log = try engine.dayLogOrCreate(for: selectedDate)
             log.meals.append(meal)
             try modelContext.save()
         } catch {

@@ -30,6 +30,10 @@ final class Meal {
         items.reduce(0) { $0 + $1.fatGrams }
     }
 
+    var isProcessed: Bool {
+        !items.isEmpty
+    }
+
     init(
         timestamp: Date = .now,
         mealType: MealType,
