@@ -10,7 +10,16 @@ struct TodayView: View {
     @State private var processingMealId: UUID?
 
     @AppStorage("healthKitEnabled") private var healthKitEnabled = false
+    @AppStorage("adjustCaloriesForActivity") private var adjustCaloriesForActivity = false
     @StateObject private var healthManager = HealthDataManager()
+
+    private var effectiveCalorieTarget: Int {
+        let base = settings?.calorieTarget ?? 2200
+        guard adjustCaloriesForActivity,
+              let active = healthManager.snapshot?.activeCalories,
+              active > 0 else { return base }
+        return base + active
+    }
 
     var body: some View {
         NavigationStack {
@@ -59,10 +68,22 @@ struct TodayView: View {
             MacroProgressBar(
                 label: "Calories",
                 current: Double(todayLog?.totalCalories ?? 0),
-                target: Double(settings?.calorieTarget ?? 2200),
+                target: Double(effectiveCalorieTarget),
                 unit: "",
                 color: FuelTheme.calorieColor
             )
+
+            if adjustCaloriesForActivity, let active = healthManager.snapshot?.activeCalories, active > 0 {
+                HStack {
+                    Image(systemName: "flame.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                    Text("\(settings?.calorieTarget ?? 2200) base + \(active) active = \(effectiveCalorieTarget) goal")
+                        .font(.caption2)
+                        .foregroundStyle(FuelTheme.textSecondary)
+                    Spacer()
+                }
+            }
 
             MacroProgressBar(
                 label: "Protein",

@@ -10,6 +10,8 @@ struct SettingsView: View {
     @State private var carbsTarget = 250
     @State private var fatTarget = 70
     @State private var apiKey = ""
+    @AppStorage("healthKitEnabled") private var healthKitEnabled = false
+    @AppStorage("adjustCaloriesForActivity") private var adjustCaloriesForActivity = false
 
     var body: some View {
         NavigationStack {
@@ -19,6 +21,14 @@ struct SettingsView: View {
                     targetRow(label: "Protein", value: $proteinTarget, unit: "g", range: 50...300, step: 5)
                     targetRow(label: "Carbs", value: $carbsTarget, unit: "g", range: 50...500, step: 10)
                     targetRow(label: "Fat", value: $fatTarget, unit: "g", range: 20...200, step: 5)
+                    if healthKitEnabled {
+                        Toggle("Adjust goal for exercise", isOn: $adjustCaloriesForActivity)
+                        if adjustCaloriesForActivity {
+                            Text("Daily calorie goal = base target + active calories burned. Use this if your target is a sedentary baseline, not a TDEE estimate.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Section("Claude API") {
