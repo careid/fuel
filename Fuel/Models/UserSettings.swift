@@ -15,7 +15,7 @@ final class UserSettings {
         proteinTarget: Int = 160,
         carbsTarget: Int = 250,
         fatTarget: Int = 70,
-        apiKey: String = ""
+        apiKey: String = Secrets.anthropicAPIKey
     ) {
         self.calorieTarget = calorieTarget
         self.proteinTarget = proteinTarget

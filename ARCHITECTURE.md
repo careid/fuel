@@ -288,12 +288,12 @@ Fuel/
 
 ## MVP Milestones
 
-### M1: Core Logging (Week 1-2)
-- [ ] SwiftData models + persistence
-- [ ] Today dashboard with manual text input
-- [ ] Claude Service: text → structured food items
-- [ ] Running calorie/protein totals
-- [ ] Basic meal list view
+### M1: Core Logging ✅ CLOSED
+- [x] SwiftData models + persistence
+- [x] Today dashboard with manual text input
+- [x] Claude Service: text → structured food items
+- [x] Running calorie/protein totals
+- [x] Basic meal list view
 
 ### M2: Multi-Modal Input (Week 3-4)
 - [ ] Photo capture → Claude Vision extraction
