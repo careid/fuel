@@ -23,17 +23,18 @@ struct RemindersView: View {
             }
 
             if remindersEnabled {
-                Section("Meal Windows") {
+                Section {
                     timingRow(icon: "sunrise", label: "Breakfast check",  time: "9:30 AM")
                     timingRow(icon: "sun.max", label: "Lunch check",       time: "1:00 PM")
                     timingRow(icon: "sunset",  label: "Dinner check",      time: "7:00 PM")
                     timingRow(icon: "moon",    label: "Protein gap check", time: "8:00 PM")
-                }
-                footer: {
+                } header: {
+                    Text("Meal Windows")
+                } footer: {
                     Text("Skipped automatically when the meal is already logged. After 5 consecutive days of logging, breakfast and lunch checks are suppressed.")
                 }
 
-                Section("Kitchen Geofence") {
+                Section {
                     Toggle("Notify when I arrive home", isOn: $geofenceEnabled)
                         .onChange(of: geofenceEnabled) { _, v in
                             save(\.geofenceEnabled, v)
@@ -73,17 +74,19 @@ struct RemindersView: View {
                             Text(err).font(.caption).foregroundStyle(.red)
                         }
                     }
-                }
-                footer: {
+                } header: {
+                    Text("Kitchen Geofence")
+                } footer: {
                     Text("Fuel will ping you when you arrive home during meal hours (7 AM – 9 PM), with a 2-hour cooldown between alerts. Requires Always On location permission.")
                 }
 
-                Section("Post-Workout") {
+                Section {
                     Label("Triggers automatically via Apple Health", systemImage: "figure.run")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                }
-                footer: {
+                } header: {
+                    Text("Post-Workout")
+                } footer: {
                     Text("When a new workout is detected, Fuel sends a one-time nudge to log your recovery meal.")
                 }
             }
