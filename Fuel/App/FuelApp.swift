@@ -8,13 +8,15 @@ struct FuelApp: App {
     let container: ModelContainer
 
     init() {
-        do {
-            container = try ModelContainer(
-                for: Schema(FuelSchemaV1.models),
-                migrationPlan: FuelMigrationPlan.self
-            )
-        } catch {
-            fatalError("Failed to create model container: \(error)")
+        let schema = Schema(FuelSchemaV1.models)
+        // Try versioned migration first; fall back to simple open if the existing
+        // store pre-dates the migration plan (no version metadata in the store yet).
+        if let c = try? ModelContainer(for: schema, migrationPlan: FuelMigrationPlan.self) {
+            container = c
+        } else if let c = try? ModelContainer(for: schema) {
+            container = c
+        } else {
+            fatalError("Cannot open or create the SwiftData store.")
         }
     }
 
