@@ -32,7 +32,8 @@ struct WeeklyTrendsView: View {
 
     private var netCaloriesData: [(date: Date, netCal: Int)] {
         recentDays.map { day in
-            (date: day.date, netCal: day.totalCalories - calorieTarget)
+            let active = snapshotsByDate[day.dateString]?.activeCalories ?? 0
+            return (date: day.date, netCal: day.totalCalories - (calorieTarget + active))
         }
     }
 

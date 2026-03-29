@@ -199,7 +199,8 @@ struct HistoryView: View {
     }
 
     private func dayRow(_ day: DayLog) -> some View {
-        let netCalories = day.totalCalories - calorieTarget
+        let activeCalories = snapshotsByDate[day.dateString]?.activeCalories ?? 0
+        let netCalories = day.totalCalories - (calorieTarget + activeCalories)
         let netLabel = netCalories >= 0 ? "+\(netCalories)" : "\(netCalories)"
         let netColor: Color = netCalories > 0 ? .orange : .green
         return HStack {
