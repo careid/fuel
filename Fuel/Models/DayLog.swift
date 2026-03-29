@@ -8,6 +8,8 @@ final class DayLog {
     var dateString: String
     @Relationship(deleteRule: .cascade)
     var meals: [Meal]
+    @Relationship(deleteRule: .cascade)
+    var workouts: [Workout]
 
     var totalCalories: Int {
         meals.reduce(0) { $0 + $1.totalCalories }
@@ -32,6 +34,7 @@ final class DayLog {
     init(date: Date = .now) {
         self.dateString = Self.dateFormatter.string(from: date)
         self.meals = []
+        self.workouts = []
     }
 
     static let dateFormatter: DateFormatter = {

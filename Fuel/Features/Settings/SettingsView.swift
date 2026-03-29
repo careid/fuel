@@ -12,6 +12,9 @@ struct SettingsView: View {
     @State private var apiKey = ""
     @AppStorage("healthKitEnabled") private var healthKitEnabled = false
     @AppStorage("adjustCaloriesForActivity") private var adjustCaloriesForActivity = false
+    @AppStorage("morningBriefEnabled") private var morningBriefEnabled = true
+    @AppStorage("briefHour") private var briefHour = 7
+    @AppStorage("briefMinute") private var briefMinute = 30
 
     var body: some View {
         NavigationStack {
@@ -47,6 +50,40 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Morning Brief") {
+                    Toggle("Daily morning brief", isOn: $morningBriefEnabled)
+                        .onChange(of: morningBriefEnabled) { _, enabled in
+                            ReminderManager.shared.scheduleMorningBrief(
+                                enabled: enabled, hour: briefHour, minute: briefMinute
+                            )
+                        }
+                    if morningBriefEnabled {
+                        HStack {
+                            Text("Notification time")
+                            Spacer()
+                            DatePicker(
+                                "",
+                                selection: briefTimeBinding,
+                                displayedComponents: .hourAndMinute
+                            )
+                            .labelsHidden()
+                            .onChange(of: briefHour) { _, _ in
+                                ReminderManager.shared.scheduleMorningBrief(
+                                    enabled: morningBriefEnabled, hour: briefHour, minute: briefMinute
+                                )
+                            }
+                            .onChange(of: briefMinute) { _, _ in
+                                ReminderManager.shared.scheduleMorningBrief(
+                                    enabled: morningBriefEnabled, hour: briefHour, minute: briefMinute
+                                )
+                            }
+                        }
+                        Text("Claude generates your brief when you first open the app each morning. The notification is a reminder to check in.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 Section("Notifications") {
                     NavigationLink("Reminders") { RemindersView() }
                 }
@@ -64,6 +101,21 @@ struct SettingsView: View {
             .onChange(of: fatTarget) { _, _ in saveSettings() }
             .onChange(of: apiKey) { _, _ in saveSettings() }
         }
+    }
+
+    private var briefTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                var comps = Calendar.current.dateComponents([.year, .month, .day], from: .now)
+                comps.hour = briefHour
+                comps.minute = briefMinute
+                return Calendar.current.date(from: comps) ?? .now
+            },
+            set: { date in
+                briefHour = Calendar.current.component(.hour, from: date)
+                briefMinute = Calendar.current.component(.minute, from: date)
+            }
+        )
     }
 
     private func targetRow(

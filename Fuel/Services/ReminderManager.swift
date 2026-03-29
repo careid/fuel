@@ -4,12 +4,13 @@ import CoreLocation
 
 // Notification identifiers
 private enum NotifID {
-    static let breakfast  = "fuel.breakfast"
-    static let lunch      = "fuel.lunch"
-    static let dinner     = "fuel.dinner"
-    static let protein    = "fuel.protein"
+    static let breakfast   = "fuel.breakfast"
+    static let lunch       = "fuel.lunch"
+    static let dinner      = "fuel.dinner"
+    static let protein     = "fuel.protein"
     static let postWorkout = "fuel.postworkout"
-    static let geofence   = "fuel.geofence"
+    static let geofence    = "fuel.geofence"
+    static let morningBrief = "fuel.morningBrief"
 }
 
 @MainActor
@@ -82,6 +83,24 @@ final class ReminderManager: NSObject, ObservableObject {
                 cancel(NotifID.protein)
             }
         }
+    }
+
+    // MARK: - Morning Brief (daily repeat)
+
+    func scheduleMorningBrief(enabled: Bool, hour: Int = 7, minute: Int = 30) {
+        cancel(NotifID.morningBrief)
+        guard enabled else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Good morning"
+        content.body = "Your daily brief is ready — tap to see today's plan."
+        content.sound = .default
+
+        var comps = DateComponents()
+        comps.hour = hour
+        comps.minute = minute
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+        center.add(UNNotificationRequest(identifier: NotifID.morningBrief, content: content, trigger: trigger))
     }
 
     // MARK: - Post-Workout (immediate, one-shot)

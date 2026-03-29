@@ -83,6 +83,105 @@ final class ClaudeService {
         }
     }
 
+    func generateDailyBrief(context: BriefContext, apiKey: String) async throws -> DailyBriefResult {
+        let systemPrompt = """
+            You are a personal nutrition and performance coach embedded in a health tracking app. \
+            You speak like a knowledgeable friend — direct, warm, and specific. Never say "data", \
+            "statistics", or "metrics". Speak to the person, not about numbers.
+
+            The user gives you a summary of their recent health context. You respond with a \
+            personalized morning brief.
+
+            Respond with ONLY valid JSON — no markdown, no explanation:
+
+            {
+              "brief": "2–4 sentences of specific, actionable coaching for today",
+              "patternAlert": "optional — only include if there is a genuinely meaningful \
+            cross-pattern insight (e.g. sleep → snacking, workout days → under-eating). \
+            Omit this key entirely if no strong pattern exists.",
+              "recommendedCalories": optional integer — only if yesterday or trends suggest \
+            a meaningful target tweak (±100–200 cal). Omit if current target is appropriate.,
+              "recommendedProtein": optional integer — only if protein trend warrants adjustment. \
+            Omit if current target is fine.
+            }
+
+            Guidelines:
+            - Be specific: mention actual numbers (sleep hours, calorie gap, etc.)
+            - Focus on today's biggest lever — don't give a list of 5 things
+            - If yesterday was great, say so briefly, then look ahead
+            - If there's nothing interesting to say (consistent, on-target), still give \
+            an encouraging, specific brief — don't be generic
+            - Never include both a pattern alert AND a target recommendation unless both \
+            are clearly warranted
+            """
+
+        let userMessage = buildBriefUserMessage(context: context)
+        let request = try buildRequest(
+            apiKey: apiKey,
+            systemPrompt: systemPrompt,
+            userContent: [.text(userMessage)]
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateResponse(response)
+
+        let apiResponse = try decodeAnthropicResponse(data)
+        let content = try extractTextContent(from: apiResponse)
+
+        do {
+            return try JSONDecoder().decode(DailyBriefResult.self, from: Data(content.utf8))
+        } catch {
+            throw ClaudeError.badExtractionJSON(raw: content)
+        }
+    }
+
+    private func buildBriefUserMessage(_ context: BriefContext) -> String {
+        var lines: [String] = []
+
+        // Yesterday
+        lines.append("Yesterday:")
+        if let sleep = context.yesterdaySleepHours {
+            lines.append("  Sleep: \(String(format: "%.1f", sleep))h")
+        } else {
+            lines.append("  Sleep: not available")
+        }
+        let calDiff = context.yesterdayCalories - context.yesterdayCalorieTarget
+        let calSign = calDiff >= 0 ? "+" : ""
+        lines.append("  Calories: \(context.yesterdayCalories) (target \(context.yesterdayCalorieTarget), \(calSign)\(calDiff))")
+        let protDiff = context.yesterdayProtein - Double(context.yesterdayProteinTarget)
+        let protSign = protDiff >= 0 ? "+" : ""
+        lines.append("  Protein: \(Int(context.yesterdayProtein))g (target \(context.yesterdayProteinTarget)g, \(protSign)\(Int(protDiff))g)")
+
+        // 14-day picture
+        lines.append("\n14-day averages:")
+        if let avgSleep = context.avgSleepHours {
+            lines.append("  Sleep: \(String(format: "%.1f", avgSleep))h/night")
+        }
+        lines.append("  Calories: \(Int(context.avgCalories))/day")
+        lines.append("  Protein: \(Int(context.avgProtein))g/day")
+        lines.append("  Logging consistency: \(context.loggingConsistencyPct)% of days")
+
+        // Weight
+        if let weight = context.latestWeightLbs {
+            var weightLine = "  Current weight: \(String(format: "%.1f", weight)) lbs"
+            if let trend = context.weightTrendLbsPerWeek {
+                let dir = trend > 0.05 ? "gaining" : trend < -0.05 ? "losing" : "stable"
+                weightLine += " (\(dir), \(String(format: "%.1f", abs(trend))) lbs/week)"
+            }
+            lines.append("\nWeight:\n\(weightLine)")
+        }
+
+        // Today's targets
+        lines.append("\nCurrent targets: \(context.currentCalorieTarget) cal, \(context.currentProteinTarget)g protein")
+
+        // Workout
+        if let workout = context.todayWorkoutType, let mins = context.todayWorkoutMinutes {
+            lines.append("\nAlready detected today: \(workout) for \(mins) min")
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
     func refineMeal(
         originalItems: [ExtractedItem],
         refinement: String,
@@ -280,4 +379,38 @@ struct ExtractedItem: Codable {
     let fatGrams: Double
     let quantity: String
     let confidence: String
+}
+
+// MARK: - Daily Brief Types
+
+struct BriefContext {
+    // Yesterday
+    let yesterdaySleepHours: Double?
+    let yesterdayCalories: Int
+    let yesterdayCalorieTarget: Int
+    let yesterdayProtein: Double
+    let yesterdayProteinTarget: Int
+
+    // 14-day averages
+    let avgSleepHours: Double?
+    let avgCalories: Double
+    let avgProtein: Double
+    let loggingConsistencyPct: Int  // 0–100
+
+    // Weight trend
+    let latestWeightLbs: Double?
+    let weightTrendLbsPerWeek: Double?  // positive = gaining, negative = losing
+
+    // Today context
+    let currentCalorieTarget: Int
+    let currentProteinTarget: Int
+    let todayWorkoutType: String?
+    let todayWorkoutMinutes: Int?
+}
+
+struct DailyBriefResult: Decodable {
+    let brief: String
+    let patternAlert: String?
+    let recommendedCalories: Int?
+    let recommendedProtein: Int?
 }

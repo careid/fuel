@@ -38,6 +38,11 @@
 		A100000029 /* DayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000030 /* DayDetailView.swift */; };
 		A100000030 /* WeeklyTrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000031 /* WeeklyTrendsView.swift */; };
 		A100000031 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000032 /* OnboardingView.swift */; };
+		A100000032 /* DailyBrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000033 /* DailyBrief.swift */; };
+		A100000033 /* CoachService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000034 /* CoachService.swift */; };
+		A100000034 /* DailyBriefCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000035 /* DailyBriefCard.swift */; };
+		A100000035 /* Workout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000036 /* Workout.swift */; };
+		A100000036 /* LogWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000037 /* LogWorkoutView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +60,11 @@
 		B100000030 /* DayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailView.swift; sourceTree = "<group>"; };
 		B100000031 /* WeeklyTrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyTrendsView.swift; sourceTree = "<group>"; };
 		B100000032 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B100000033 /* DailyBrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyBrief.swift; sourceTree = "<group>"; };
+		B100000034 /* CoachService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachService.swift; sourceTree = "<group>"; };
+		B100000035 /* DailyBriefCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyBriefCard.swift; sourceTree = "<group>"; };
+		B100000036 /* Workout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workout.swift; sourceTree = "<group>"; };
+		B100000037 /* LogWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWorkoutView.swift; sourceTree = "<group>"; };
 		B100000012 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B100000013 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		B100000017 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
@@ -128,6 +138,8 @@
 				B100000006 /* UserSettings.swift */,
 				B100000023 /* HealthSnapshot.swift */,
 				B100000029 /* FuelSchema.swift */,
+				B100000033 /* DailyBrief.swift */,
+				B100000036 /* Workout.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -140,6 +152,7 @@
 				B100000018 /* SpeechService.swift */,
 				B100000024 /* HealthDataManager.swift */,
 				B100000027 /* ReminderManager.swift */,
+				B100000034 /* CoachService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -149,11 +162,20 @@
 			children = (
 				E100000010 /* Today */,
 				E100000011 /* LogMeal */,
+				E100000016 /* LogWorkout */,
 				E100000012 /* History */,
 				E100000013 /* Settings */,
 				E100000015 /* Onboarding */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		E100000016 /* LogWorkout */ = {
+			isa = PBXGroup;
+			children = (
+				B100000037 /* LogWorkoutView.swift */,
+			);
+			path = LogWorkout;
 			sourceTree = "<group>";
 		};
 		E100000007 /* Shared */ = {
@@ -179,6 +201,7 @@
 			children = (
 				B100000009 /* TodayView.swift */,
 				B100000025 /* HealthStatsCard.swift */,
+				B100000035 /* DailyBriefCard.swift */,
 			);
 			path = Today;
 			sourceTree = "<group>";
@@ -336,6 +359,11 @@
 				A100000029 /* DayDetailView.swift in Sources */,
 				A100000030 /* WeeklyTrendsView.swift in Sources */,
 				A100000031 /* OnboardingView.swift in Sources */,
+				A100000032 /* DailyBrief.swift in Sources */,
+				A100000033 /* CoachService.swift in Sources */,
+				A100000034 /* DailyBriefCard.swift in Sources */,
+				A100000035 /* Workout.swift in Sources */,
+				A100000036 /* LogWorkoutView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -8,9 +8,13 @@ struct TodayView: View {
     @State private var todayLog: DayLog?
     @State private var settings: UserSettings?
     @State private var processingMealId: UUID?
+    @State private var todayBrief: DailyBrief?
+    @State private var isGeneratingBrief = false
+    @State private var showLogWorkout = false
 
     @AppStorage("healthKitEnabled") private var healthKitEnabled = false
     @AppStorage("adjustCaloriesForActivity") private var adjustCaloriesForActivity = false
+    @AppStorage("morningBriefEnabled") private var morningBriefEnabled = true
     @StateObject private var healthManager = HealthDataManager()
 
     private var effectiveCalorieTarget: Int {
@@ -25,10 +29,15 @@ struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    DailyBriefCard(
+                        brief: todayBrief,
+                        isLoading: isGeneratingBrief,
+                        onApplyTargets: applyBriefTargets
+                    )
                     dailySummaryCard
                     healthSection
+                    workoutsList
                     mealsList
-                    claudeInsightCard
                 }
                 .padding()
             }
@@ -51,6 +60,9 @@ struct TodayView: View {
             }
             .onChange(of: showLogMeal) { _, isShowing in
                 if !isShowing { loadData() }
+            }
+            .sheet(isPresented: $showLogWorkout, onDismiss: loadData) {
+                LogWorkoutView()
             }
         }
     }
@@ -174,6 +186,97 @@ struct TodayView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Workouts List
+
+    private var workoutsList: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Workouts")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    showLogWorkout = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.purple.opacity(0.12))
+                        .foregroundStyle(.purple)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+            }
+
+            let workouts = (todayLog?.workouts ?? []).sorted { $0.timestamp < $1.timestamp }
+            if workouts.isEmpty {
+                Text("No workouts logged yet")
+                    .font(.subheadline)
+                    .foregroundStyle(FuelTheme.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 12)
+            } else {
+                ForEach(workouts, id: \.id) { workout in
+                    workoutRow(workout)
+                    if workout.id != workouts.last?.id {
+                        Divider()
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(FuelTheme.backgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func workoutRow(_ workout: Workout) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: workout.workoutCategory.icon)
+                .font(.title3)
+                .foregroundStyle(.purple)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(workout.workoutCategory.label)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                if let notes = workout.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(.caption)
+                        .foregroundStyle(FuelTheme.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(workout.durationMinutes) min")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                if let cal = workout.caloriesBurned {
+                    Text("\(cal) cal")
+                        .font(.caption)
+                        .foregroundStyle(FuelTheme.textSecondary)
+                }
+            }
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                deleteWorkout(workout)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+
+    private func deleteWorkout(_ workout: Workout) {
+        modelContext.delete(workout)
+        try? modelContext.save()
+        loadData()
+    }
+
     // MARK: - Meals List
 
     private var mealsList: some View {
@@ -266,28 +369,6 @@ struct TodayView: View {
         .padding(.vertical, 24)
     }
 
-    // MARK: - Claude Insight
-
-    private var claudeInsightCard: some View {
-        Group {
-            if let log = todayLog, !log.meals.isEmpty, let settings {
-                let proteinGap = Double(settings.proteinTarget) - log.totalProtein
-                if proteinGap > 20 {
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .foregroundStyle(.purple)
-                        Text("You're \(Int(proteinGap))g short on protein. A protein shake or chicken dinner would close the gap.")
-                            .font(.subheadline)
-                            .foregroundStyle(FuelTheme.textSecondary)
-                    }
-                    .padding()
-                    .background(Color.purple.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-        }
-    }
-
     // MARK: - Data Loading
 
     private func loadData() {
@@ -302,5 +383,26 @@ struct TodayView: View {
         if settings.geofenceEnabled, let coord = settings.kitchenCoordinate {
             rm.startGeofence(latitude: coord.latitude, longitude: coord.longitude)
         }
+
+        if morningBriefEnabled, !settings.apiKey.isEmpty {
+            Task { await loadBrief(settings: settings) }
+        }
+    }
+
+    private func loadBrief(settings: UserSettings) async {
+        guard todayBrief == nil, !isGeneratingBrief else { return }
+        isGeneratingBrief = true
+        defer { isGeneratingBrief = false }
+        todayBrief = try? await CoachService().generateBriefIfNeeded(
+            modelContext: modelContext,
+            settings: settings
+        )
+    }
+
+    private func applyBriefTargets(calories: Int, protein: Int) {
+        guard let settings else { return }
+        settings.calorieTarget = calories
+        settings.proteinTarget = protein
+        try? modelContext.save()
     }
 }

@@ -8,7 +8,7 @@ struct FuelApp: App {
     let container: ModelContainer
 
     init() {
-        let schema = Schema(FuelSchemaV1.models)
+        let schema = Schema(FuelSchemaV3.models)
         // Try versioned migration first; fall back to simple open if the existing
         // store pre-dates the migration plan (no version metadata in the store yet).
         if let c = try? ModelContainer(for: schema, migrationPlan: FuelMigrationPlan.self) {
