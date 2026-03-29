@@ -17,7 +17,7 @@ struct DayDetailView: View {
     private var effectiveCalorieTarget: Int {
         let base = settings?.calorieTarget ?? 2200
         guard adjustCaloriesForActivity,
-              let active = (existingSnapshot ?? healthManager.snapshot)?.activeCalories,
+              let active = displaySnapshot?.activeCalories,
               active > 0 else { return base }
         return base + active
     }

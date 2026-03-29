@@ -26,7 +26,7 @@ final class DayLog {
     }
 
     var date: Date {
-        Self.dateFormatter.date(from: dateString)!
+        Self.dateFormatter.date(from: dateString) ?? .now
     }
 
     init(date: Date = .now) {
@@ -37,6 +37,7 @@ final class DayLog {
     static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = .current
         return f
     }()

@@ -163,20 +163,42 @@ final class LocationFetcher: NSObject, ObservableObject, CLLocationManagerDelega
         error = nil
 
         switch manager.authorizationStatus {
-        case .notDetermined:
-            manager.requestWhenInUseAuthorization()
-            try? await Task.sleep(for: .seconds(1))
         case .denied, .restricted:
             error = "Location access denied. Enable in Settings → Privacy → Location Services."
             isFetching = false
             return nil
+        case .notDetermined:
+            // Store the continuation first, then request auth.
+            // locationManagerDidChangeAuthorization will call requestLocation once granted.
+            return await withCheckedContinuation { cont in
+                continuation = cont
+                manager.requestWhenInUseAuthorization()
+            }
         default:
-            break
+            return await withCheckedContinuation { cont in
+                continuation = cont
+                manager.requestLocation()
+            }
         }
+    }
 
-        return await withCheckedContinuation { cont in
-            continuation = cont
-            manager.requestLocation()
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        Task { @MainActor in
+            switch manager.authorizationStatus {
+            case .authorizedWhenInUse, .authorizedAlways:
+                if continuation != nil {
+                    manager.requestLocation()
+                }
+            case .denied, .restricted:
+                if continuation != nil {
+                    error = "Location access denied. Enable in Settings → Privacy → Location Services."
+                    isFetching = false
+                    continuation?.resume(returning: nil)
+                    continuation = nil
+                }
+            default:
+                break
+            }
         }
     }
 

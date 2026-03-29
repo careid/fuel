@@ -308,16 +308,16 @@ Fuel/
 - [x] Weight from Renpho (via HealthKit)
 - [x] Daily health snapshot persistence
 
-### M4: Smart Reminders (Week 7-8)
-- [ ] Kitchen geofence setup + monitoring
-- [ ] Time-based meal window reminders
-- [ ] Post-workout reminders (HealthKit workout detection)
-- [ ] Evening protein gap summary
-- [ ] Adaptive frequency (back off when consistent)
+### M4: Smart Reminders ✅ CLOSED
+- [x] Kitchen geofence setup + monitoring
+- [x] Time-based meal window reminders
+- [x] Post-workout reminders (HealthKit workout detection)
+- [x] Evening protein gap summary
+- [x] Adaptive frequency (back off when consistent)
 
-### M5: Insights & Polish (Week 9-10)
-- [ ] Sleep-nutrition correlation view
-- [ ] Weekly trends charts
-- [ ] Calendar history view
+### M5: Insights & Polish
+- [x] Calendar history view (month grid with day navigation)
+- [x] Weekly trends charts (calories, protein, sleep)
+- [x] Sleep-nutrition correlation view
 - [ ] TestFlight deployment
-- [ ] Onboarding flow (targets, HealthKit permissions, kitchen location)
+- [x] Onboarding flow (targets, HealthKit permissions, kitchen location)

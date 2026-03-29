@@ -1,10 +1,22 @@
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var selectedTab: Tab = .today
     @State private var showLogMeal = false
 
     var body: some View {
+        Group {
+            if hasCompletedOnboarding {
+                mainTabs
+            } else {
+                OnboardingView()
+            }
+        }
+        .animation(.easeInOut(duration: 0.4), value: hasCompletedOnboarding)
+    }
+
+    private var mainTabs: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
                 TodayView(showLogMeal: $showLogMeal)

@@ -45,7 +45,7 @@ final class ClaudeService {
         """
 
     func extractMeal(from text: String, apiKey: String) async throws -> ExtractionResult {
-        let request = buildRequest(
+        let request = try buildRequest(
             apiKey: apiKey,
             systemPrompt: extractionSystemPrompt,
             userContent: [.text(text)]
@@ -57,7 +57,7 @@ final class ClaudeService {
     func extractMeal(from image: UIImage, apiKey: String) async throws -> ExtractionResult {
         guard let jpeg = resizedJPEG(image) else { throw ClaudeError.noTextContent }
         let base64 = jpeg.base64EncodedString()
-        let request = buildRequest(
+        let request = try buildRequest(
             apiKey: apiKey,
             systemPrompt: extractionSystemPrompt,
             userContent: [
@@ -100,7 +100,7 @@ final class ClaudeService {
             using the same JSON schema as before.
             """
 
-        let request = buildRequest(
+        let request = try buildRequest(
             apiKey: apiKey,
             systemPrompt: extractionSystemPrompt,
             userContent: [.text(prompt)]
@@ -127,7 +127,7 @@ extension ClaudeService {
         apiKey: String,
         systemPrompt: String,
         userContent: [ContentBlock]
-    ) -> URLRequest {
+    ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "content-type")
@@ -143,7 +143,7 @@ extension ClaudeService {
             ]
         )
 
-        request.httpBody = try! JSONEncoder().encode(body)
+        request.httpBody = try JSONEncoder().encode(body)
         return request
     }
 
@@ -157,7 +157,9 @@ extension ClaudeService {
     }
 
     private func validateResponse(_ response: URLResponse) throws {
-        let httpResponse = response as! HTTPURLResponse
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ClaudeError.badAPIResponse(raw: "Non-HTTP response")
+        }
         guard (200...299).contains(httpResponse.statusCode) else {
             throw ClaudeError.apiError(statusCode: httpResponse.statusCode)
         }
