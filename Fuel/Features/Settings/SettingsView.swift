@@ -91,7 +91,7 @@ struct SettingsView: View {
                 }
 
                 Section("About") {
-                    LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
+                    LabeledContent("Version", value: appVersion)
                     LabeledContent("Model", value: "Claude Sonnet 4.6")
                 }
             }
@@ -106,6 +106,12 @@ struct SettingsView: View {
                 if !focused { saveSettings() }
             }
         }
+    }
+
+    private var appVersion: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
+        return "\(v) (\(b))"
     }
 
     private var briefTimeBinding: Binding<Date> {
