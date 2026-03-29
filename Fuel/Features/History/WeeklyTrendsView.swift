@@ -32,8 +32,7 @@ struct WeeklyTrendsView: View {
 
     private var netCaloriesData: [(date: Date, netCal: Int)] {
         recentDays.map { day in
-            let active = snapshotsByDate[day.dateString]?.activeCalories ?? 0
-            return (date: day.date, netCal: day.totalCalories - active)
+            (date: day.date, netCal: day.totalCalories - calorieTarget)
         }
     }
 
@@ -85,26 +84,20 @@ struct WeeklyTrendsView: View {
     // MARK: - Calorie Chart
 
     private var calorieChart: some View {
-        chartCard(title: "Net Calories", subtitle: "food eaten minus activity burned") {
+        chartCard(title: "Net Calories", subtitle: "surplus (+) or deficit (−) vs. goal") {
             Chart {
                 ForEach(netCaloriesData, id: \.date) { entry in
                     BarMark(
                         x: .value("Date", entry.date, unit: .day),
                         y: .value("Net Calories", entry.netCal)
                     )
-                    .foregroundStyle(FuelTheme.progressColor(ratio: Double(entry.netCal) / Double(calorieTarget)))
+                    .foregroundStyle(entry.netCal > 0 ? Color.orange : Color.green)
                     .cornerRadius(4)
                 }
 
-                RuleMark(y: .value("Target", calorieTarget))
-                    .foregroundStyle(.orange.opacity(0.6))
+                RuleMark(y: .value("Break Even", 0))
+                    .foregroundStyle(.secondary.opacity(0.6))
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                    .annotation(position: .topTrailing, alignment: .topTrailing) {
-                        Text("Goal")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                            .padding(.trailing, 4)
-                    }
             }
             .chartXAxis { dateAxis() }
             .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) }
@@ -316,8 +309,7 @@ struct WeeklyTrendsView: View {
         isLoadingWeeklyInsight = true
         defer { isLoadingWeeklyInsight = false }
         let dayTuples = last7Days.map { day -> (dateString: String, protein: Double, calories: Int) in
-            let active = snapshotsByDate[day.dateString]?.activeCalories ?? 0
-            return (dateString: day.dateString, protein: day.totalProtein, calories: day.totalCalories - active)
+            (dateString: day.dateString, protein: day.totalProtein, calories: day.totalCalories)
         }
         do {
             weeklyInsight = try await ClaudeService().generateWeeklyInsight(
