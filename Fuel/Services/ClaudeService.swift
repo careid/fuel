@@ -145,9 +145,16 @@ final class ClaudeService {
         } else {
             lines.append("  Sleep: not available")
         }
-        let calDiff = context.yesterdayCalories - context.yesterdayCalorieTarget
+        // Net calorie balance = food eaten - (base target + active calories burned)
+        let effectiveTarget = context.yesterdayCalorieTarget + (context.yesterdayActiveCalories ?? 0)
+        let calDiff = context.yesterdayCalories - effectiveTarget
         let calSign = calDiff >= 0 ? "+" : ""
-        lines.append("  Calories: \(context.yesterdayCalories) (target \(context.yesterdayCalorieTarget), \(calSign)\(calDiff))")
+        var calLine = "  Calories eaten: \(context.yesterdayCalories) (base target \(context.yesterdayCalorieTarget)"
+        if let active = context.yesterdayActiveCalories, active > 0 {
+            calLine += ", +\(active) burned from activity → effective target \(effectiveTarget)"
+        }
+        calLine += ", net \(calSign)\(calDiff))"
+        lines.append(calLine)
         let protDiff = context.yesterdayProtein - Double(context.yesterdayProteinTarget)
         let protSign = protDiff >= 0 ? "+" : ""
         lines.append("  Protein: \(Int(context.yesterdayProtein))g (target \(context.yesterdayProteinTarget)g, \(protSign)\(Int(protDiff))g)")
@@ -517,6 +524,7 @@ struct BriefContext {
     let yesterdaySleepHours: Double?
     let yesterdayCalories: Int
     let yesterdayCalorieTarget: Int
+    let yesterdayActiveCalories: Int?   // calories burned from activity (walking, exercise, etc.)
     let yesterdayProtein: Double
     let yesterdayProteinTarget: Int
 

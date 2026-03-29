@@ -110,6 +110,7 @@ final class CoachService {
             yesterdaySleepHours: yesterdaySnap?.sleepHours,
             yesterdayCalories: yesterdayLog?.totalCalories ?? 0,
             yesterdayCalorieTarget: settings.calorieTarget,
+            yesterdayActiveCalories: yesterdaySnap?.activeCalories,
             yesterdayProtein: yesterdayLog?.totalProtein ?? 0,
             yesterdayProteinTarget: settings.proteinTarget,
             avgSleepHours: avgSleep,
