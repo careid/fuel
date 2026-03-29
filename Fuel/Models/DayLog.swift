@@ -3,8 +3,6 @@ import SwiftData
 
 @Model
 final class DayLog {
-    #Unique<DayLog>([\.dateString])
-
     var dateString: String
     @Relationship(deleteRule: .cascade)
     var meals: [Meal]

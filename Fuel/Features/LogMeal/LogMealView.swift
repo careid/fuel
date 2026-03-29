@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import UIKit
 
 // UI-only enum — NOT stored in SwiftData
@@ -471,8 +472,9 @@ struct LogMealView: View {
         guard let settings = try? engine.settings() else {
             return "Couldn't load settings. Please check your API key."
         }
+        let todayString = DayLog.todayString()
         var descriptor = FetchDescriptor<DayLog>(
-            predicate: #Predicate { $0.dateString == DayLog.todayString() }
+            predicate: #Predicate { $0.dateString == todayString }
         )
         descriptor.fetchLimit = 1
         let todayLog = try? modelContext.fetch(descriptor).first

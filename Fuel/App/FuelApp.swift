@@ -8,10 +8,12 @@ struct FuelApp: App {
     let container: ModelContainer
 
     init() {
-        let schema = Schema(FuelSchemaV3.models)
-        // Try versioned migration first; fall back to simple open if the existing
-        // store pre-dates the migration plan (no version metadata in the store yet).
-        if let c = try? ModelContainer(for: schema, migrationPlan: FuelMigrationPlan.self) {
+        let schema = Schema(FuelSchemaV4.models)
+        let cloudConfig = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
+
+        // Prefer CloudKit-backed store so data survives app deletion and syncs across devices.
+        // Falls back to local-only if CloudKit isn't available (simulator, no iCloud sign-in, etc.).
+        if let c = try? ModelContainer(for: schema, configurations: cloudConfig) {
             container = c
         } else if let c = try? ModelContainer(for: schema) {
             container = c

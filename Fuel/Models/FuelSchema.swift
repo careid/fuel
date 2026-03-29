@@ -27,14 +27,24 @@ enum FuelSchemaV3: VersionedSchema {
     }
 }
 
+// MARK: - V4 Schema (removes #Unique on DayLog.dateString for CloudKit compatibility)
+
+enum FuelSchemaV4: VersionedSchema {
+    static var versionIdentifier = Schema.Version(4, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [DayLog.self, Meal.self, FoodItem.self, UserSettings.self, HealthSnapshot.self, DailyBrief.self, Workout.self]
+    }
+}
+
 // MARK: - Migration Plan
 
 enum FuelMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [FuelSchemaV1.self, FuelSchemaV2.self, FuelSchemaV3.self] }
+    static var schemas: [any VersionedSchema.Type] { [FuelSchemaV1.self, FuelSchemaV2.self, FuelSchemaV3.self, FuelSchemaV4.self] }
     static var stages: [MigrationStage] {
         [
             .lightweight(fromVersion: FuelSchemaV1.self, toVersion: FuelSchemaV2.self),
             .lightweight(fromVersion: FuelSchemaV2.self, toVersion: FuelSchemaV3.self),
+            .lightweight(fromVersion: FuelSchemaV3.self, toVersion: FuelSchemaV4.self),
         ]
     }
 }
