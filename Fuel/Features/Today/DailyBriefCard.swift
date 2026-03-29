@@ -3,7 +3,7 @@ import SwiftUI
 struct DailyBriefCard: View {
     let brief: DailyBrief?
     let isLoading: Bool
-    var onApplyTargets: ((Int, Int) -> Void)? = nil
+    var onApplyTargets: ((Int?, Int?) -> Void)? = nil
 
     var body: some View {
         if isLoading {
@@ -104,7 +104,7 @@ struct DailyBriefCard: View {
                         .foregroundStyle(FuelTheme.textPrimary)
                     }
                     Spacer()
-                    if let cal, let prot {
+                    if cal != nil || prot != nil {
                         Button("Apply") {
                             onApplyTargets?(cal, prot)
                         }

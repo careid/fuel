@@ -508,10 +508,10 @@ struct TodayView: View {
         )
     }
 
-    private func applyBriefTargets(calories: Int, protein: Int) {
+    private func applyBriefTargets(calories: Int?, protein: Int?) {
         guard let settings else { return }
-        settings.calorieTarget = calories
-        settings.proteinTarget = protein
+        if let calories { settings.calorieTarget = calories }
+        if let protein { settings.proteinTarget = protein }
         try? modelContext.save()
     }
 }

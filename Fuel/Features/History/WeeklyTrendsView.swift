@@ -25,7 +25,7 @@ struct WeeklyTrendsView: View {
     private var last7Days: [DayLog] { Array(recentDays.suffix(7)) }
 
     private var snapshotsByDate: [String: HealthSnapshot] {
-        Dictionary(uniqueKeysWithValues: allSnapshots.map { ($0.dateString, $0) })
+        Dictionary(allSnapshots.map { ($0.dateString, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private var sleepData: [(date: Date, hours: Double)] {

@@ -31,8 +31,6 @@ struct LogMealView: View {
     @State private var error: String?
     @State private var refinementText = ""
 
-    private let inputModes: [LogMealMode] = [.text, .photo, .voice, .quickAdd, .ask]
-
     init(defaultDate: Date = .now) {
         _selectedDate = State(initialValue: defaultDate)
     }
@@ -121,7 +119,7 @@ struct LogMealView: View {
 
     private var inputModePicker: some View {
         HStack(spacing: 0) {
-            ForEach(inputModes, id: \.self) { mode in
+            ForEach(LogMealMode.allCases, id: \.self) { mode in
                 Button {
                     if mode != inputMode {
                         extractionResult = nil
@@ -432,6 +430,7 @@ struct LogMealView: View {
     private func refine() async {
         guard let current = extractionResult else { return }
         isExtracting = true
+        error = nil
 
         do {
             let engine = NutritionEngine(modelContext: modelContext)
@@ -495,6 +494,7 @@ struct LogMealView: View {
 
     private func saveMeal() async {
         guard let result = extractionResult else { return }
+        isExtracting = true
 
         let engine = NutritionEngine(modelContext: modelContext)
         let foodItems = result.items.map { item in
@@ -530,9 +530,11 @@ struct LogMealView: View {
             try modelContext.save()
         } catch {
             self.error = error.localizedDescription
+            isExtracting = false
             return
         }
 
+        isExtracting = false
         dismiss()
     }
 }
