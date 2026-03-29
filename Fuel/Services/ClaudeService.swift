@@ -294,7 +294,7 @@ final class ClaudeService {
             let date = dateFormatter.date(from: day.dateString) ?? .now
             let dayName = dayFormatter.string(from: date)
             let hitTarget = day.protein >= Double(proteinTarget) * 0.9 ? "hit" : "missed"
-            return "  \(dayName): \(Int(day.protein))g protein (\(hitTarget)), \(day.calories) cal"
+            return "  \(dayName): \(Int(day.protein))g protein (\(hitTarget)), \(day.calories) net cal"
         }.joined(separator: "\n")
 
         let avg = days.isEmpty ? 0 : Int(days.reduce(0.0) { $0 + $1.protein } / Double(days.count))

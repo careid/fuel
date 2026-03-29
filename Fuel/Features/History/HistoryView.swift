@@ -8,6 +8,7 @@ private enum HistoryTab: String, CaseIterable {
 
 struct HistoryView: View {
     @Query(sort: \DayLog.dateString, order: .reverse) private var allDays: [DayLog]
+    @Query(sort: \HealthSnapshot.dateString, order: .reverse) private var allSnapshots: [HealthSnapshot]
     @State private var selectedTab: HistoryTab = .calendar
     @State private var displayedMonth: Date = {
         let cal = Calendar.current
@@ -16,6 +17,10 @@ struct HistoryView: View {
 
     private var daysByDateString: [String: DayLog] {
         Dictionary(allDays.map { ($0.dateString, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    private var snapshotsByDate: [String: HealthSnapshot] {
+        Dictionary(allSnapshots.map { ($0.dateString, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private var isCurrentMonth: Bool {
@@ -191,7 +196,9 @@ struct HistoryView: View {
     }
 
     private func dayRow(_ day: DayLog) -> some View {
-        HStack {
+        let activeCalories = snapshotsByDate[day.dateString]?.activeCalories ?? 0
+        let netCalories = day.totalCalories - activeCalories
+        return HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text(day.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
                     .font(.subheadline)
@@ -205,7 +212,7 @@ struct HistoryView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 3) {
-                Text("\(day.totalCalories) cal")
+                Text(activeCalories > 0 ? "net \(netCalories) cal" : "\(day.totalCalories) cal")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(FuelTheme.calorieColor)

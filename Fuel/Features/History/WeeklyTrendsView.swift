@@ -16,16 +16,33 @@ struct WeeklyTrendsView: View {
     private var proteinTarget: Int { settings?.proteinTarget ?? 160 }
 
     private var recentDays: [DayLog] {
+        let today = DayLog.dateFormatter.string(from: .now)
         let cutoff = DayLog.dateFormatter.string(
             from: Calendar.current.date(byAdding: .day, value: -13, to: .now) ?? .now
         )
-        return allDays.filter { $0.dateString >= cutoff }.sorted { $0.dateString < $1.dateString }
+        return allDays.filter { $0.dateString >= cutoff && $0.dateString < today }
+            .sorted { $0.dateString < $1.dateString }
     }
 
     private var last7Days: [DayLog] { Array(recentDays.suffix(7)) }
 
     private var snapshotsByDate: [String: HealthSnapshot] {
         Dictionary(allSnapshots.map { ($0.dateString, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    private var netCaloriesData: [(date: Date, netCal: Int)] {
+        recentDays.map { day in
+            let active = snapshotsByDate[day.dateString]?.activeCalories ?? 0
+            return (date: day.date, netCal: day.totalCalories - active)
+        }
+    }
+
+    private var stepsData: [(date: Date, steps: Int)] {
+        recentDays.compactMap { day in
+            guard let snap = snapshotsByDate[day.dateString],
+                  let steps = snap.steps else { return nil }
+            return (date: day.date, steps: steps)
+        }
     }
 
     private var sleepData: [(date: Date, hours: Double)] {
@@ -50,6 +67,9 @@ struct WeeklyTrendsView: View {
                     weeklyInsightCard
                     calorieChart
                     proteinChart
+                    if stepsData.count >= 2 {
+                        stepsChart
+                    }
                     if sleepData.count >= 2 {
                         sleepChart
                     }
@@ -65,14 +85,14 @@ struct WeeklyTrendsView: View {
     // MARK: - Calorie Chart
 
     private var calorieChart: some View {
-        chartCard(title: "Calories", subtitle: "14-day history") {
+        chartCard(title: "Net Calories", subtitle: "food eaten minus activity burned") {
             Chart {
-                ForEach(recentDays, id: \.dateString) { day in
+                ForEach(netCaloriesData, id: \.date) { entry in
                     BarMark(
-                        x: .value("Date", day.date, unit: .day),
-                        y: .value("Calories", day.totalCalories)
+                        x: .value("Date", entry.date, unit: .day),
+                        y: .value("Net Calories", entry.netCal)
                     )
-                    .foregroundStyle(FuelTheme.progressColor(ratio: Double(day.totalCalories) / Double(calorieTarget)))
+                    .foregroundStyle(FuelTheme.progressColor(ratio: Double(entry.netCal) / Double(calorieTarget)))
                     .cornerRadius(4)
                 }
 
@@ -113,6 +133,36 @@ struct WeeklyTrendsView: View {
                         Text("Goal")
                             .font(.caption2)
                             .foregroundStyle(.blue)
+                            .padding(.trailing, 4)
+                    }
+            }
+            .chartXAxis { dateAxis() }
+            .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) }
+            .frame(height: 150)
+        }
+    }
+
+    // MARK: - Steps Chart
+
+    private var stepsChart: some View {
+        chartCard(title: "Steps", subtitle: "daily activity") {
+            Chart {
+                ForEach(stepsData, id: \.date) { entry in
+                    BarMark(
+                        x: .value("Date", entry.date, unit: .day),
+                        y: .value("Steps", entry.steps)
+                    )
+                    .foregroundStyle(.green.opacity(0.75))
+                    .cornerRadius(4)
+                }
+
+                RuleMark(y: .value("Goal", 10_000))
+                    .foregroundStyle(.green.opacity(0.5))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                    .annotation(position: .topTrailing, alignment: .topTrailing) {
+                        Text("10k")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
                             .padding(.trailing, 4)
                     }
             }
@@ -265,7 +315,10 @@ struct WeeklyTrendsView: View {
         weeklyInsightLoaded = true
         isLoadingWeeklyInsight = true
         defer { isLoadingWeeklyInsight = false }
-        let dayTuples = last7Days.map { (dateString: $0.dateString, protein: $0.totalProtein, calories: $0.totalCalories) }
+        let dayTuples = last7Days.map { day -> (dateString: String, protein: Double, calories: Int) in
+            let active = snapshotsByDate[day.dateString]?.activeCalories ?? 0
+            return (dateString: day.dateString, protein: day.totalProtein, calories: day.totalCalories - active)
+        }
         do {
             weeklyInsight = try await ClaudeService().generateWeeklyInsight(
                 days: dayTuples,
