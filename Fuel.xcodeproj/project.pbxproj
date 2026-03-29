@@ -43,6 +43,7 @@
 		A100000034 /* DailyBriefCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000035 /* DailyBriefCard.swift */; };
 		A100000035 /* Workout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000036 /* Workout.swift */; };
 		A100000036 /* LogWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000037 /* LogWorkoutView.swift */; };
+		A100000037 /* AskCoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000038 /* AskCoachView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -65,6 +66,7 @@
 		B100000035 /* DailyBriefCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyBriefCard.swift; sourceTree = "<group>"; };
 		B100000036 /* Workout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workout.swift; sourceTree = "<group>"; };
 		B100000037 /* LogWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWorkoutView.swift; sourceTree = "<group>"; };
+		B100000038 /* AskCoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskCoachView.swift; sourceTree = "<group>"; };
 		B100000012 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B100000013 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		B100000017 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
@@ -213,6 +215,7 @@
 				B100000019 /* PhotoInputView.swift */,
 				B100000020 /* VoiceInputView.swift */,
 				B100000021 /* QuickAddView.swift */,
+				B100000038 /* AskCoachView.swift */,
 			);
 			path = LogMeal;
 			sourceTree = "<group>";
@@ -364,6 +367,7 @@
 				A100000034 /* DailyBriefCard.swift in Sources */,
 				A100000035 /* Workout.swift in Sources */,
 				A100000036 /* LogWorkoutView.swift in Sources */,
+				A100000037 /* AskCoachView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -77,7 +77,17 @@ final class ReminderManager: NSObject, ObservableObject {
         if let log {
             let gap = Double(settings.proteinTarget) - log.totalProtein
             if gap > 20 {
-                let body = "You're \(Int(gap))g short on protein. A shake or chicken would close the gap."
+                let body: String
+                switch gap {
+                case 80...:
+                    body = "You're \(Int(gap))g short — over half your target. A large chicken breast (~55g) plus a shake (~25g) would get you most of the way there."
+                case 50..<80:
+                    body = "Still \(Int(gap))g to go. Two scoops of protein powder or 8oz Greek yogurt + a chicken thigh would close it."
+                case 30..<50:
+                    body = "\(Int(gap))g of protein left. A shake plus cottage cheese or Greek yogurt would do it."
+                default:
+                    body = "\(Int(gap))g short — one shake or a 4oz chicken breast covers it."
+                }
                 schedule(id: NotifID.protein, title: "Protein check", body: body, hour: 20, minute: 0)
             } else {
                 cancel(NotifID.protein)
