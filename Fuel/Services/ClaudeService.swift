@@ -115,7 +115,7 @@ final class ClaudeService {
             are clearly warranted
             """
 
-        let userMessage = buildBriefUserMessage(context: context)
+        let userMessage = buildBriefUserMessage(context)
         let request = try buildRequest(
             apiKey: apiKey,
             systemPrompt: systemPrompt,
@@ -180,6 +180,133 @@ final class ClaudeService {
         }
 
         return lines.joined(separator: "\n")
+    }
+
+    // MARK: - Coaching Prompts
+
+    private let dailyInsightSystemPrompt = """
+        You are a concise nutrition coach in a personal tracking app. The user's #1 goal is hitting \
+        their protein target. Speak like a knowledgeable friend — direct and specific. Never say \
+        "data", "statistics", or "metrics". Respond with EXACTLY 1–2 sentences of actionable coaching. \
+        No bullet points, no headers, no "Great job!" openers. Mention specific numbers. Focus on the \
+        single highest-leverage action.
+        """
+
+    private let askCoachSystemPrompt = """
+        You are a personal nutrition coach inside a tracking app. Answer the user's food question directly. \
+        Their primary goal is hitting their daily protein target. Be concrete — name actual foods and amounts. \
+        Keep it to 2–4 sentences. Don't say "based on your data." Just answer like a knowledgeable friend.
+        """
+
+    private let weeklyInsightSystemPrompt = """
+        You are a nutrition coach analyzing someone's week of eating. Their primary goal is hitting their \
+        protein target consistently. Respond with 2–3 sentences covering: (1) their average protein, \
+        (2) which day(s) were the weakest and likely why, (3) one specific actionable suggestion for the \
+        coming week. Be direct and specific. No bullet points, no headers, no filler praise. Mention actual \
+        day names and numbers.
+        """
+
+    func generateDailyInsight(
+        proteinEaten: Double,
+        proteinTarget: Int,
+        caloriesEaten: Int,
+        calorieTarget: Int,
+        mealCount: Int,
+        sleepHours: Double?,
+        apiKey: String
+    ) async throws -> String {
+        let hour = Calendar.current.component(.hour, from: .now)
+        let timeOfDay: String
+        switch hour {
+        case 0..<12: timeOfDay = "morning"
+        case 12..<17: timeOfDay = "afternoon"
+        case 17..<21: timeOfDay = "evening"
+        default:      timeOfDay = "night"
+        }
+
+        var lines = [
+            "Time of day: \(timeOfDay) (\(hour):00)",
+            "Meals logged today: \(mealCount)",
+            "Protein: \(Int(proteinEaten))g eaten / \(proteinTarget)g target (\(proteinTarget - Int(proteinEaten))g remaining)",
+            "Calories: \(caloriesEaten) eaten / \(calorieTarget) target"
+        ]
+        if let sleep = sleepHours {
+            lines.append("Sleep last night: \(String(format: "%.1f", sleep))h")
+        }
+
+        let request = try buildRequest(
+            apiKey: apiKey,
+            systemPrompt: dailyInsightSystemPrompt,
+            userContent: [.text(lines.joined(separator: "\n"))]
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateResponse(response)
+        let apiResponse = try decodeAnthropicResponse(data)
+        return try extractTextContent(from: apiResponse)
+    }
+
+    func askCoach(
+        question: String,
+        proteinRemaining: Double,
+        caloriesRemaining: Int,
+        proteinTarget: Int,
+        calorieTarget: Int,
+        apiKey: String
+    ) async throws -> String {
+        let context = """
+            Current context:
+            Protein remaining today: \(Int(proteinRemaining))g (target \(proteinTarget)g)
+            Calories remaining today: \(caloriesRemaining) (target \(calorieTarget))
+
+            User's question: \(question)
+            """
+        let request = try buildRequest(
+            apiKey: apiKey,
+            systemPrompt: askCoachSystemPrompt,
+            userContent: [.text(context)]
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateResponse(response)
+        let apiResponse = try decodeAnthropicResponse(data)
+        return try extractTextContent(from: apiResponse)
+    }
+
+    func generateWeeklyInsight(
+        days: [(dateString: String, protein: Double, calories: Int)],
+        proteinTarget: Int,
+        calorieTarget: Int,
+        apiKey: String
+    ) async throws -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "EEEE"
+
+        let rows = days.map { day -> String in
+            let date = dateFormatter.date(from: day.dateString) ?? .now
+            let dayName = dayFormatter.string(from: date)
+            let hitTarget = day.protein >= Double(proteinTarget) * 0.9 ? "hit" : "missed"
+            return "  \(dayName): \(Int(day.protein))g protein (\(hitTarget)), \(day.calories) cal"
+        }.joined(separator: "\n")
+
+        let avg = days.isEmpty ? 0 : Int(days.reduce(0.0) { $0 + $1.protein } / Double(days.count))
+
+        let message = """
+            7-day summary (target: \(proteinTarget)g protein / \(calorieTarget) cal):
+            \(rows)
+            7-day average protein: \(avg)g
+            """
+
+        let request = try buildRequest(
+            apiKey: apiKey,
+            systemPrompt: weeklyInsightSystemPrompt,
+            userContent: [.text(message)]
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateResponse(response)
+        let apiResponse = try decodeAnthropicResponse(data)
+        return try extractTextContent(from: apiResponse)
     }
 
     func refineMeal(

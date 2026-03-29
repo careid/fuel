@@ -11,6 +11,9 @@ struct TodayView: View {
     @State private var todayBrief: DailyBrief?
     @State private var isGeneratingBrief = false
     @State private var showLogWorkout = false
+    @State private var claudeInsight: String?
+    @State private var isLoadingInsight = false
+    @State private var insightMealCount: Int = -1
 
     @AppStorage("healthKitEnabled") private var healthKitEnabled = false
     @AppStorage("adjustCaloriesForActivity") private var adjustCaloriesForActivity = false
@@ -35,6 +38,7 @@ struct TodayView: View {
                         onApplyTargets: applyBriefTargets
                     )
                     dailySummaryCard
+                    claudeInsightCard
                     healthSection
                     workoutsList
                     mealsList
@@ -60,6 +64,9 @@ struct TodayView: View {
             }
             .onChange(of: showLogMeal) { _, isShowing in
                 if !isShowing { loadData() }
+            }
+            .onChange(of: todayLog?.meals.count) { _, _ in
+                loadInsightIfNeeded()
             }
             .sheet(isPresented: $showLogWorkout, onDismiss: loadData) {
                 LogWorkoutView()
@@ -138,6 +145,89 @@ struct TodayView: View {
                 .foregroundStyle(FuelTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Claude Insight Card
+
+    @ViewBuilder
+    private var claudeInsightCard: some View {
+        if isLoadingInsight {
+            HStack(spacing: 12) {
+                Image(systemName: "brain.head.profile")
+                    .foregroundStyle(.purple)
+                    .font(.title2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Coach")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.purple)
+                    Text("Thinking about your day...")
+                        .font(.subheadline)
+                        .foregroundStyle(FuelTheme.textSecondary)
+                }
+                Spacer()
+                ProgressView().tint(.purple)
+            }
+            .padding()
+            .background(insightCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        } else if let insight = claudeInsight {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "brain.head.profile")
+                    .foregroundStyle(.purple)
+                    .font(.title2)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Coach")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.purple)
+                    Text(insight)
+                        .font(.subheadline)
+                        .foregroundStyle(FuelTheme.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding()
+            .background(insightCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private var insightCardBackground: some View {
+        ZStack {
+            FuelTheme.backgroundSecondary
+            LinearGradient(
+                colors: [Color.purple.opacity(0.07), Color.clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    private func loadInsightIfNeeded() {
+        guard let log = todayLog, log.meals.count > 0 else { claudeInsight = nil; return }
+        guard let settings, !settings.apiKey.isEmpty else { return }
+        guard log.meals.count != insightMealCount else { return }
+        insightMealCount = log.meals.count
+        Task { await fetchInsight(log: log, settings: settings) }
+    }
+
+    private func fetchInsight(log: DayLog, settings: UserSettings) async {
+        isLoadingInsight = true
+        defer { isLoadingInsight = false }
+        do {
+            claudeInsight = try await ClaudeService().generateDailyInsight(
+                proteinEaten: log.totalProtein,
+                proteinTarget: settings.proteinTarget,
+                caloriesEaten: log.totalCalories,
+                calorieTarget: settings.calorieTarget,
+                mealCount: log.meals.count,
+                sleepHours: healthManager.snapshot?.sleepHours,
+                apiKey: settings.apiKey
+            )
+        } catch {
+            claudeInsight = nil
+        }
     }
 
     // MARK: - Health Section
@@ -387,6 +477,8 @@ struct TodayView: View {
         if morningBriefEnabled, !settings.apiKey.isEmpty {
             Task { await loadBrief(settings: settings) }
         }
+
+        loadInsightIfNeeded()
     }
 
     private func loadBrief(settings: UserSettings) async {

@@ -7,6 +7,10 @@ struct WeeklyTrendsView: View {
     @Query(sort: \HealthSnapshot.dateString, order: .reverse) private var allSnapshots: [HealthSnapshot]
     @Query private var settingsArr: [UserSettings]
 
+    @State private var weeklyInsight: String?
+    @State private var isLoadingWeeklyInsight = false
+    @State private var weeklyInsightLoaded = false
+
     private var settings: UserSettings? { settingsArr.first }
     private var calorieTarget: Int { settings?.calorieTarget ?? 2200 }
     private var proteinTarget: Int { settings?.proteinTarget ?? 160 }
@@ -17,6 +21,8 @@ struct WeeklyTrendsView: View {
         )
         return allDays.filter { $0.dateString >= cutoff }.sorted { $0.dateString < $1.dateString }
     }
+
+    private var last7Days: [DayLog] { Array(recentDays.suffix(7)) }
 
     private var snapshotsByDate: [String: HealthSnapshot] {
         Dictionary(uniqueKeysWithValues: allSnapshots.map { ($0.dateString, $0) })
@@ -41,6 +47,7 @@ struct WeeklyTrendsView: View {
                 .padding(.top, 60)
             } else {
                 VStack(spacing: 16) {
+                    weeklyInsightCard
                     calorieChart
                     proteinChart
                     if sleepData.count >= 2 {
@@ -48,6 +55,9 @@ struct WeeklyTrendsView: View {
                     }
                 }
                 .padding()
+                .task {
+                    await loadWeeklyInsightIfNeeded()
+                }
             }
         }
     }
@@ -189,6 +199,83 @@ struct WeeklyTrendsView: View {
             return recentDays.first(where: { $0.dateString == nextStr })?.totalCalories
         }.reduce(0, +)
         return entries.isEmpty ? 0 : total / entries.count
+    }
+
+    // MARK: - Weekly Insight Card
+
+    @ViewBuilder
+    private var weeklyInsightCard: some View {
+        if isLoadingWeeklyInsight {
+            HStack(spacing: 12) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .foregroundStyle(.purple)
+                    .font(.title2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Weekly Pattern")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.purple)
+                    Text("Analyzing your week...")
+                        .font(.subheadline)
+                        .foregroundStyle(FuelTheme.textSecondary)
+                }
+                Spacer()
+                ProgressView().tint(.purple)
+            }
+            .padding()
+            .background(weeklyInsightBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        } else if let insight = weeklyInsight {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .foregroundStyle(.purple)
+                        .font(.title3)
+                    Text("Weekly Pattern")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.purple)
+                }
+                Text(insight)
+                    .font(.subheadline)
+                    .foregroundStyle(FuelTheme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding()
+            .background(weeklyInsightBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private var weeklyInsightBackground: some View {
+        ZStack {
+            FuelTheme.backgroundSecondary
+            LinearGradient(
+                colors: [Color.purple.opacity(0.07), Color.clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    private func loadWeeklyInsightIfNeeded() async {
+        guard !weeklyInsightLoaded, last7Days.count >= 3,
+              let settings, !settings.apiKey.isEmpty else { return }
+        weeklyInsightLoaded = true
+        isLoadingWeeklyInsight = true
+        defer { isLoadingWeeklyInsight = false }
+        let dayTuples = last7Days.map { (dateString: $0.dateString, protein: $0.totalProtein, calories: $0.totalCalories) }
+        do {
+            weeklyInsight = try await ClaudeService().generateWeeklyInsight(
+                days: dayTuples,
+                proteinTarget: proteinTarget,
+                calorieTarget: calorieTarget,
+                apiKey: settings.apiKey
+            )
+        } catch {
+            weeklyInsight = nil
+            weeklyInsightLoaded = false
+        }
     }
 
     // MARK: - Helpers

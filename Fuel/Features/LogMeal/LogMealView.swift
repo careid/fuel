@@ -1,11 +1,26 @@
 import SwiftUI
 import UIKit
 
+// UI-only enum — NOT stored in SwiftData
+enum LogMealMode: CaseIterable, Hashable {
+    case text, photo, voice, quickAdd, ask
+
+    var asInputType: InputType {
+        switch self {
+        case .text:     return .text
+        case .photo:    return .photo
+        case .voice:    return .voice
+        case .quickAdd: return .quickAdd
+        case .ask:      return .text   // ask mode never saves a meal
+        }
+    }
+}
+
 struct LogMealView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
-    @State private var inputMode: InputType = .text
+    @State private var inputMode: LogMealMode = .text
     @State private var inputText = ""
     @State private var capturedImage: UIImage?
     @State private var voiceTranscript = ""
@@ -16,7 +31,7 @@ struct LogMealView: View {
     @State private var error: String?
     @State private var refinementText = ""
 
-    private let inputModes: [InputType] = [.text, .photo, .voice, .quickAdd]
+    private let inputModes: [LogMealMode] = [.text, .photo, .voice, .quickAdd, .ask]
 
     init(defaultDate: Date = .now) {
         _selectedDate = State(initialValue: defaultDate)
@@ -108,6 +123,7 @@ struct LogMealView: View {
         HStack(spacing: 0) {
             ForEach(inputModes, id: \.self) { mode in
                 Button {
+                    if mode == .ask { extractionResult = nil }
                     withAnimation(.easeInOut(duration: 0.2)) {
                         inputMode = mode
                     }
@@ -138,23 +154,23 @@ struct LogMealView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
-    private func modeIcon(for mode: InputType) -> String {
+    private func modeIcon(for mode: LogMealMode) -> String {
         switch mode {
         case .text:     return "text.bubble"
         case .photo:    return "camera"
         case .voice:    return "mic"
         case .quickAdd: return "clock.arrow.circlepath"
-        case .video:    return "video"
+        case .ask:      return "person.fill.questionmark"
         }
     }
 
-    private func modeLabel(for mode: InputType) -> String {
+    private func modeLabel(for mode: LogMealMode) -> String {
         switch mode {
         case .text:     return "Type"
         case .photo:    return "Photo"
         case .voice:    return "Voice"
         case .quickAdd: return "Recent"
-        case .video:    return "Video"
+        case .ask:      return "Ask"
         }
     }
 
@@ -185,8 +201,10 @@ struct LogMealView: View {
                     inputMode = .text
                 }
             }
-        case .video:
-            EmptyView()
+        case .ask:
+            AskCoachView { question in
+                await handleAskCoach(question: question)
+            }
         }
     }
 
@@ -201,7 +219,7 @@ struct LogMealView: View {
 
     @ViewBuilder
     private var inputActions: some View {
-        if inputMode != .quickAdd {
+        if inputMode != .quickAdd && inputMode != .ask {
             VStack(spacing: 12) {
                 Button {
                     Task { await extract() }
@@ -423,13 +441,39 @@ struct LogMealView: View {
                 text: text,
                 mealType: selectedMealType,
                 date: selectedDate,
-                inputType: inputMode
+                inputType: inputMode.asInputType
             )
         } catch {
             self.error = error.localizedDescription
             return
         }
         dismiss()
+    }
+
+    private func handleAskCoach(question: String) async -> String {
+        let engine = NutritionEngine(modelContext: modelContext)
+        guard let settings = try? engine.settings() else {
+            return "Couldn't load settings. Please check your API key."
+        }
+        var descriptor = FetchDescriptor<DayLog>(
+            predicate: #Predicate { $0.dateString == DayLog.todayString() }
+        )
+        descriptor.fetchLimit = 1
+        let todayLog = try? modelContext.fetch(descriptor).first
+        let proteinEaten = todayLog?.totalProtein ?? 0
+        let caloriesEaten = todayLog?.totalCalories ?? 0
+        do {
+            return try await ClaudeService().askCoach(
+                question: question,
+                proteinRemaining: max(0, Double(settings.proteinTarget) - proteinEaten),
+                caloriesRemaining: max(0, settings.calorieTarget - caloriesEaten),
+                proteinTarget: settings.proteinTarget,
+                calorieTarget: settings.calorieTarget,
+                apiKey: settings.apiKey
+            )
+        } catch {
+            return "Sorry, couldn't reach Claude. Check your connection."
+        }
     }
 
     private func saveMeal() async {
@@ -450,16 +494,16 @@ struct LogMealView: View {
 
         let rawText: String?
         switch inputMode {
-        case .text:  rawText = inputText
-        case .voice: rawText = voiceTranscript
-        default:     rawText = nil
+        case .text:                     rawText = inputText
+        case .voice:                    rawText = voiceTranscript
+        case .photo, .quickAdd, .ask:   rawText = nil
         }
 
         let meal = Meal(
             timestamp: selectedDate,
             mealType: selectedMealType,
             items: foodItems,
-            inputType: inputMode,
+            inputType: inputMode.asInputType,
             rawInputText: rawText
         )
 
