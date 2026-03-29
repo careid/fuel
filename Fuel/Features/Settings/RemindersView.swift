@@ -37,14 +37,20 @@ struct RemindersView: View {
                 Section {
                     Toggle("Notify when I arrive home", isOn: $geofenceEnabled)
                         .onChange(of: geofenceEnabled) { _, v in
-                            save(\.geofenceEnabled, v)
-                            if !v { ReminderManager.shared.stopGeofence() }
-                            else if let coord = settings?.kitchenCoordinate {
+                            if !v {
+                                // Turning off: persist immediately and stop monitoring
+                                save(\.geofenceEnabled, false)
+                                ReminderManager.shared.stopGeofence()
+                            } else if let coord = settings?.kitchenCoordinate {
+                                // Turning on with a location: persist and start monitoring
+                                save(\.geofenceEnabled, true)
                                 ReminderManager.shared.startGeofence(
                                     latitude: coord.latitude,
                                     longitude: coord.longitude
                                 )
                             }
+                            // Turning on without a location: keep geofenceEnabled=false in settings
+                            // until the user sets a location via setLocation() below
                         }
 
                     if geofenceEnabled {
@@ -134,6 +140,8 @@ struct RemindersView: View {
         hasLocation = true
 
         if geofenceEnabled {
+            // Location is now set — persist the enabled flag that was deferred above
+            save(\.geofenceEnabled, true)
             ReminderManager.shared.startGeofence(
                 latitude: loc.coordinate.latitude,
                 longitude: loc.coordinate.longitude

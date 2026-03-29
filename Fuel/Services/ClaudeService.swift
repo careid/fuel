@@ -314,7 +314,9 @@ final class ClaudeService {
         refinement: String,
         apiKey: String
     ) async throws -> ExtractionResult {
-        let itemsJSON = try String(data: JSONEncoder().encode(originalItems), encoding: .utf8)!
+        guard let itemsJSON = try String(data: JSONEncoder().encode(originalItems), encoding: .utf8) else {
+            throw ClaudeError.noTextContent
+        }
 
         let prompt = """
             The user previously logged these items:

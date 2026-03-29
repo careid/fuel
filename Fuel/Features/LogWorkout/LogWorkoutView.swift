@@ -10,6 +10,7 @@ struct LogWorkoutView: View {
     @State private var caloriesBurned: String = ""
     @State private var notes: String = ""
     @State private var selectedDate: Date = .now
+    @State private var saveError: String?
 
     var body: some View {
         NavigationStack {
@@ -42,6 +43,14 @@ struct LogWorkoutView: View {
             }
             .navigationTitle("Log Workout")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Save Failed", isPresented: Binding(
+                get: { saveError != nil },
+                set: { if !$0 { saveError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(saveError ?? "")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -98,9 +107,13 @@ struct LogWorkoutView: View {
         )
 
         let engine = NutritionEngine(modelContext: modelContext)
-        if let log = try? engine.dayLogOrCreate(for: selectedDate) {
+        do {
+            let log = try engine.dayLogOrCreate(for: selectedDate)
             log.workouts.append(workout)
-            try? modelContext.save()
+            try modelContext.save()
+        } catch {
+            saveError = error.localizedDescription
+            return
         }
 
         dismiss()

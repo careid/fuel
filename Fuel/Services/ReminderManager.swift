@@ -164,12 +164,15 @@ final class ReminderManager: NSObject, ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: streakKey) }
     }
 
-    func updateStreak(hadMealsToday: Bool) {
+    /// Call on each foreground with whether YESTERDAY had logged meals.
+    /// Increments the streak if yesterday was logged; resets only if a full
+    /// calendar day passed without logs. Today's in-progress state is irrelevant.
+    func updateStreak(yesterdayHadMeals: Bool) {
         let today = DayLog.dateFormatter.string(from: .now)
         let lastDate = UserDefaults.standard.string(forKey: streakDateKey) ?? ""
         guard today != lastDate else { return }
         UserDefaults.standard.set(today, forKey: streakDateKey)
-        loggingStreak = hadMealsToday ? loggingStreak + 1 : 0
+        loggingStreak = yesterdayHadMeals ? loggingStreak + 1 : 0
     }
 
     // MARK: - Helpers
@@ -235,10 +238,9 @@ extension ReminderManager: CLLocationManagerDelegate {
         guard (7...21).contains(hour) else { return }
 
         // 2-hour cooldown between geofence pings
-        let key = "fuel.lastGeofenceNotif"
-        if let last = UserDefaults.standard.object(forKey: key) as? Date,
+        if let last = UserDefaults.standard.object(forKey: geofenceCooldownKey) as? Date,
            Date.now.timeIntervalSince(last) < 7200 { return }
-        UserDefaults.standard.set(Date.now, forKey: key)
+        UserDefaults.standard.set(Date.now, forKey: geofenceCooldownKey)
 
         let content = UNMutableNotificationContent()
         content.title = "Home? Log your meal."

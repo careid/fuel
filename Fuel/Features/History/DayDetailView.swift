@@ -166,6 +166,7 @@ struct DayDetailView: View {
                     MealRow(
                         meal: meal,
                         isProcessing: processingMealId == meal.id,
+                        isAnyProcessingActive: processingMealId != nil,
                         onProcess: { Task { await processMeal(meal) } },
                         onDelete: { deleteMeal(meal) }
                     )

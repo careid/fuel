@@ -123,7 +123,10 @@ struct LogMealView: View {
         HStack(spacing: 0) {
             ForEach(inputModes, id: \.self) { mode in
                 Button {
-                    if mode == .ask { extractionResult = nil }
+                    if mode != inputMode {
+                        extractionResult = nil
+                        error = nil
+                    }
                     withAnimation(.easeInOut(duration: 0.2)) {
                         inputMode = mode
                     }
@@ -355,15 +358,28 @@ struct LogMealView: View {
             HStack {
                 TextField("e.g. \"actually 8oz salmon\"", text: $refinementText)
                     .textFieldStyle(.roundedBorder)
+                    .disabled(isExtracting)
 
-                Button {
-                    Task { await refine() }
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(FuelTheme.calorieColor)
+                if isExtracting {
+                    ProgressView()
+                        .tint(FuelTheme.calorieColor)
+                        .frame(width: 30, height: 30)
+                } else {
+                    Button {
+                        Task { await refine() }
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(refinementText.isEmpty ? FuelTheme.textSecondary : FuelTheme.calorieColor)
+                    }
+                    .disabled(refinementText.isEmpty)
                 }
-                .disabled(refinementText.isEmpty || isExtracting)
+            }
+
+            if let error {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
         }
     }
@@ -375,11 +391,12 @@ struct LogMealView: View {
             Text("Save Meal")
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.green)
+                .background(isExtracting ? Color.gray : Color.green)
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .fontWeight(.semibold)
         }
+        .disabled(isExtracting)
     }
 
     // MARK: - Actions

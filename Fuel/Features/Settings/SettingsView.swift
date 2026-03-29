@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var carbsTarget = 250
     @State private var fatTarget = 70
     @State private var apiKey = ""
+    @FocusState private var apiKeyFocused: Bool
     @AppStorage("healthKitEnabled") private var healthKitEnabled = false
     @AppStorage("adjustCaloriesForActivity") private var adjustCaloriesForActivity = false
     @AppStorage("morningBriefEnabled") private var morningBriefEnabled = true
@@ -38,6 +39,7 @@ struct SettingsView: View {
                     SecureField("API Key", text: $apiKey)
                         .textContentType(.password)
                         .autocorrectionDisabled()
+                        .focused($apiKeyFocused)
 
                     if apiKey.isEmpty {
                         Label("Required for meal analysis", systemImage: "exclamationmark.triangle")
@@ -89,7 +91,7 @@ struct SettingsView: View {
                 }
 
                 Section("About") {
-                    LabeledContent("Version", value: "1.0.0")
+                    LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
                     LabeledContent("Model", value: "Claude Sonnet 4.6")
                 }
             }
@@ -99,7 +101,10 @@ struct SettingsView: View {
             .onChange(of: proteinTarget) { _, _ in saveSettings() }
             .onChange(of: carbsTarget) { _, _ in saveSettings() }
             .onChange(of: fatTarget) { _, _ in saveSettings() }
-            .onChange(of: apiKey) { _, _ in saveSettings() }
+            .onChange(of: apiKeyFocused) { _, focused in
+                // Save the API key only when the field loses focus, not on every keystroke
+                if !focused { saveSettings() }
+            }
         }
     }
 

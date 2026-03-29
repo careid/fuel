@@ -344,6 +344,7 @@ struct OnboardingView: View {
         guard let s = try? engine.settings() else { return }
         s.calorieTarget = calorieTarget
         s.proteinTarget = proteinTarget
+        try? modelContext.save()
     }
 
     private func saveReminders() {
@@ -351,6 +352,7 @@ struct OnboardingView: View {
         guard let s = try? engine.settings() else { return }
         s.remindersEnabled = remindersEnabled
         s.geofenceEnabled  = remindersEnabled
+        try? modelContext.save()
     }
 
     private func saveKitchenLocation(_ coord: CLLocationCoordinate2D) {
@@ -358,6 +360,7 @@ struct OnboardingView: View {
         guard let s = try? engine.settings() else { return }
         s.kitchenLatitude  = coord.latitude
         s.kitchenLongitude = coord.longitude
+        try? modelContext.save()
     }
 }
 

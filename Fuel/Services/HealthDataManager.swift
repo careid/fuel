@@ -45,8 +45,8 @@ final class HealthDataManager: ObservableObject {
 
         async let steps          = fetchSteps(for: date)
         async let activeCalories = fetchActiveCalories(for: date)
-        async let weight         = fetchLatestWeight()
-        async let rhr            = fetchRestingHeartRate()
+        async let weight         = fetchLatestWeight(asOf: date)
+        async let rhr            = fetchRestingHeartRate(asOf: date)
         async let sleep          = fetchSleep(nightOf: date)
         async let workout        = fetchWorkout(on: date)
 
@@ -106,7 +106,7 @@ final class HealthDataManager: ObservableObject {
         await withCheckedContinuation { cont in
             let cal = Calendar.current
             let start = cal.startOfDay(for: date)
-            let end = cal.isDateInToday(date) ? Date.now : cal.date(byAdding: .day, value: 1, to: start)!
+            let end = cal.isDateInToday(date) ? Date.now : (cal.date(byAdding: .day, value: 1, to: start) ?? Date.now)
             let pred = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
             let q = HKStatisticsQuery(quantityType: HKQuantityType(.stepCount),
                                       quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
@@ -120,7 +120,7 @@ final class HealthDataManager: ObservableObject {
         await withCheckedContinuation { cont in
             let cal = Calendar.current
             let start = cal.startOfDay(for: date)
-            let end = cal.isDateInToday(date) ? Date.now : cal.date(byAdding: .day, value: 1, to: start)!
+            let end = cal.isDateInToday(date) ? Date.now : (cal.date(byAdding: .day, value: 1, to: start) ?? Date.now)
             let pred = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
             let q = HKStatisticsQuery(quantityType: HKQuantityType(.activeEnergyBurned),
                                       quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
@@ -130,11 +130,15 @@ final class HealthDataManager: ObservableObject {
         }
     }
 
-    private func fetchLatestWeight() async -> Double? {
+    private func fetchLatestWeight(asOf date: Date) async -> Double? {
         await withCheckedContinuation { cont in
+            let cal = Calendar.current
+            // Use the end of the target day so historical fetches don't show future readings
+            let endOfDay = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: date)) ?? Date.now
+            let pred = HKQuery.predicateForSamples(withStart: nil, end: endOfDay, options: .strictEndDate)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
             let q = HKSampleQuery(sampleType: HKQuantityType(.bodyMass),
-                                  predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
+                                  predicate: pred, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
                 let kg = (samples?.first as? HKQuantitySample)?.quantity.doubleValue(for: .gramUnit(with: .kilo))
                 cont.resume(returning: kg)
             }
@@ -142,11 +146,14 @@ final class HealthDataManager: ObservableObject {
         }
     }
 
-    private func fetchRestingHeartRate() async -> Double? {
+    private func fetchRestingHeartRate(asOf date: Date) async -> Double? {
         await withCheckedContinuation { cont in
+            let cal = Calendar.current
+            let endOfDay = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: date)) ?? Date.now
+            let pred = HKQuery.predicateForSamples(withStart: nil, end: endOfDay, options: .strictEndDate)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
             let q = HKSampleQuery(sampleType: HKQuantityType(.restingHeartRate),
-                                  predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
+                                  predicate: pred, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
                 let bpm = (samples?.first as? HKQuantitySample)?
                     .quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
                 cont.resume(returning: bpm)
@@ -158,7 +165,7 @@ final class HealthDataManager: ObservableObject {
     private func fetchSleep(nightOf date: Date) async -> TimeInterval? {
         await withCheckedContinuation { cont in
             let cal = Calendar.current
-            guard let sixPmPrior = cal.date(byAdding: .hour, value: -18,
+            guard let sixPmPrior = cal.date(byAdding: .hour, value: -6,
                                             to: cal.startOfDay(for: date)) else {
                 cont.resume(returning: nil)
                 return
@@ -185,7 +192,7 @@ final class HealthDataManager: ObservableObject {
         await withCheckedContinuation { cont in
             let cal = Calendar.current
             let start = cal.startOfDay(for: date)
-            let end = cal.isDateInToday(date) ? Date.now : cal.date(byAdding: .day, value: 1, to: start)!
+            let end = cal.isDateInToday(date) ? Date.now : (cal.date(byAdding: .day, value: 1, to: start) ?? Date.now)
             let pred = HKQuery.predicateForSamples(withStart: start, end: end)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
             let q = HKSampleQuery(sampleType: HKObjectType.workoutType(),

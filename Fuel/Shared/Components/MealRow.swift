@@ -3,6 +3,7 @@ import SwiftUI
 struct MealRow: View {
     let meal: Meal
     var isProcessing: Bool = false
+    var isAnyProcessingActive: Bool = false
     var onProcess: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
 
@@ -144,11 +145,12 @@ struct MealRow: View {
                                 .fontWeight(.medium)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
-                                .background(Color.purple.opacity(0.12))
-                                .foregroundStyle(.purple)
+                                .background(Color.purple.opacity(isAnyProcessingActive ? 0.06 : 0.12))
+                                .foregroundStyle(isAnyProcessingActive ? FuelTheme.textSecondary : .purple)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         .buttonStyle(.plain)
+                        .disabled(isAnyProcessingActive)
                     }
 
                     if let onDelete {

@@ -179,8 +179,8 @@ struct WeeklyTrendsView: View {
         let good = sleepData.filter { $0.hours >= 7.5 }
         guard !poor.isEmpty, !good.isEmpty else { return nil }
 
-        let poorCal = poorDayCals(for: poor)
-        let goodCal = poorDayCals(for: good)
+        let poorCal = avgCaloriesForSleepDays(poor)
+        let goodCal = avgCaloriesForSleepDays(good)
         guard poorCal > 0, goodCal > 0 else { return nil }
 
         if poorCal > goodCal + 150 {
@@ -191,12 +191,13 @@ struct WeeklyTrendsView: View {
         return nil
     }
 
-    private func poorDayCals(for entries: [(date: Date, hours: Double)]) -> Int {
-        let cal = Calendar.current
+    // Returns avg calories eaten on days matched by these sleep entries.
+    // entry.date is the waking-up day (sleep is stored against the morning-after date),
+    // so we look up calories on entry.date directly — no +1 offset needed.
+    private func avgCaloriesForSleepDays(_ entries: [(date: Date, hours: Double)]) -> Int {
         let total = entries.compactMap { entry -> Int? in
-            guard let nextDay = cal.date(byAdding: .day, value: 1, to: entry.date) else { return nil }
-            let nextStr = DayLog.dateFormatter.string(from: nextDay)
-            return recentDays.first(where: { $0.dateString == nextStr })?.totalCalories
+            let dateStr = DayLog.dateFormatter.string(from: entry.date)
+            return recentDays.first(where: { $0.dateString == dateStr })?.totalCalories
         }.reduce(0, +)
         return entries.isEmpty ? 0 : total / entries.count
     }

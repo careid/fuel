@@ -12,8 +12,10 @@ struct MacroProgressBar: View {
     }
 
     private var percentage: Int {
-        Int(ratio * 100)
+        min(Int(ratio * 100), 100)
     }
+
+    private var isOver: Bool { ratio > 1 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -42,9 +44,9 @@ struct MacroProgressBar: View {
             }
             .frame(height: 12)
 
-            Text("\(percentage)%")
+            Text(isOver ? "100%+" : "\(percentage)%")
                 .font(.caption2)
-                .foregroundStyle(FuelTheme.textSecondary)
+                .foregroundStyle(isOver ? color : FuelTheme.textSecondary)
         }
     }
 }

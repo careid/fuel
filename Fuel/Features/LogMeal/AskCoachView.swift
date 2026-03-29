@@ -91,5 +91,6 @@ struct AskCoachView: View {
         answer = nil
         answer = await onAsk(trimmed)
         isAsking = false
+        question = ""
     }
 }

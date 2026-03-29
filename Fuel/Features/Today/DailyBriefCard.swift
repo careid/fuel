@@ -81,30 +81,42 @@ struct DailyBriefCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
 
-            // Target suggestion (optional)
-            if let cal = brief.recommendedCalories, let prot = brief.recommendedProtein {
+            // Target suggestion (optional — show if at least one target is recommended)
+            if brief.recommendedCalories != nil || brief.recommendedProtein != nil {
+                let cal = brief.recommendedCalories
+                let prot = brief.recommendedProtein
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Suggested for today")
                             .font(.caption2)
                             .foregroundStyle(FuelTheme.textSecondary)
-                        Text("\(cal) cal · \(prot)g protein")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(FuelTheme.textPrimary)
+                        Group {
+                            if let cal, let prot {
+                                Text("\(cal) cal · \(prot)g protein")
+                            } else if let cal {
+                                Text("\(cal) cal")
+                            } else if let prot {
+                                Text("\(prot)g protein")
+                            }
+                        }
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(FuelTheme.textPrimary)
                     }
                     Spacer()
-                    Button("Apply") {
-                        onApplyTargets?(cal, prot)
+                    if let cal, let prot {
+                        Button("Apply") {
+                            onApplyTargets?(cal, prot)
+                        }
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.orange.opacity(0.15))
+                        .foregroundStyle(.orange)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .buttonStyle(.plain)
                     }
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.orange.opacity(0.15))
-                    .foregroundStyle(.orange)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -126,9 +138,13 @@ struct DailyBriefCard: View {
         }
     }
 
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+
     private func generatedTimeLabel(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date)
+        Self.timeFormatter.string(from: date)
     }
 }

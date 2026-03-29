@@ -47,20 +47,20 @@ final class CoachService {
         let todayString = DayLog.dateFormatter.string(from: today)
 
         // Fetch last 14 DayLogs (excluding today — we want history)
-        var logDescriptor = FetchDescriptor<DayLog>()
-        let allLogs = (try? modelContext.fetch(logDescriptor)) ?? []
-        let recentLogs = allLogs
-            .filter { $0.dateString < todayString }
-            .sorted { $0.dateString > $1.dateString }
-            .prefix(14)
+        var logDescriptor = FetchDescriptor<DayLog>(
+            predicate: #Predicate { $0.dateString < todayString },
+            sortBy: [SortDescriptor(\DayLog.dateString, order: .reverse)]
+        )
+        logDescriptor.fetchLimit = 14
+        let recentLogs = (try? modelContext.fetch(logDescriptor)) ?? []
 
         // Fetch last 14 HealthSnapshots (including yesterday)
-        var snapDescriptor = FetchDescriptor<HealthSnapshot>()
-        let allSnaps = (try? modelContext.fetch(snapDescriptor)) ?? []
-        let recentSnaps = allSnaps
-            .filter { $0.dateString < todayString }
-            .sorted { $0.dateString > $1.dateString }
-            .prefix(14)
+        var snapDescriptor = FetchDescriptor<HealthSnapshot>(
+            predicate: #Predicate { $0.dateString < todayString },
+            sortBy: [SortDescriptor(\HealthSnapshot.dateString, order: .reverse)]
+        )
+        snapDescriptor.fetchLimit = 14
+        let recentSnaps = (try? modelContext.fetch(snapDescriptor)) ?? []
 
         // Yesterday's data
         let yesterday = cal.date(byAdding: .day, value: -1, to: today)!
@@ -97,7 +97,11 @@ final class CoachService {
         // Today's workout (from today's snapshot if already loaded)
         var todayWorkoutType: String? = nil
         var todayWorkoutMins: Int? = nil
-        if let todaySnap = allSnaps.first(where: { $0.dateString == todayString }) {
+        var todaySnapDescriptor = FetchDescriptor<HealthSnapshot>(
+            predicate: #Predicate { $0.dateString == todayString }
+        )
+        todaySnapDescriptor.fetchLimit = 1
+        if let todaySnap = try? modelContext.fetch(todaySnapDescriptor).first {
             todayWorkoutType = todaySnap.workoutType
             todayWorkoutMins = todaySnap.workoutMinutes
         }

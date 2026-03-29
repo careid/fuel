@@ -15,7 +15,7 @@ struct HistoryView: View {
     }()
 
     private var daysByDateString: [String: DayLog] {
-        Dictionary(uniqueKeysWithValues: allDays.map { ($0.dateString, $0) })
+        Dictionary(allDays.map { ($0.dateString, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private var isCurrentMonth: Bool {

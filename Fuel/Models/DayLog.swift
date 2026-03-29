@@ -28,7 +28,11 @@ final class DayLog {
     }
 
     var date: Date {
-        Self.dateFormatter.date(from: dateString) ?? .now
+        guard let parsed = Self.dateFormatter.date(from: dateString) else {
+            assertionFailure("DayLog.date: malformed dateString '\(dateString)' — falling back to .now")
+            return .now
+        }
+        return parsed
     }
 
     init(date: Date = .now) {

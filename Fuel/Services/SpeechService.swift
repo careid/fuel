@@ -47,6 +47,7 @@ final class SpeechService: NSObject, ObservableObject {
         }
 
         let node = audioEngine.inputNode
+        node.removeTap(onBus: 0) // guard against duplicate taps if startRecording is called twice
         let format = node.outputFormat(forBus: 0)
         node.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buf, _ in
             self?.recognitionRequest?.append(buf)

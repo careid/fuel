@@ -14,6 +14,7 @@ struct TodayView: View {
     @State private var claudeInsight: String?
     @State private var isLoadingInsight = false
     @State private var insightMealCount: Int = -1
+    @State private var processingError: String?
 
     @AppStorage("healthKitEnabled") private var healthKitEnabled = false
     @AppStorage("adjustCaloriesForActivity") private var adjustCaloriesForActivity = false
@@ -394,12 +395,20 @@ struct TodayView: View {
                 }
             }
 
+            if let err = processingError {
+                Text(err)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 4)
+            }
+
             if let meals = todayLog?.meals, !meals.isEmpty {
                 let sorted = meals.sorted { $0.timestamp < $1.timestamp }
                 ForEach(sorted, id: \.id) { meal in
                     MealRow(
                         meal: meal,
                         isProcessing: processingMealId == meal.id,
+                        isAnyProcessingActive: processingMealId != nil,
                         onProcess: { Task { await processMeal(meal) } },
                         onDelete: { deleteMeal(meal) }
                     )
@@ -419,11 +428,12 @@ struct TodayView: View {
     private func processMeal(_ meal: Meal) async {
         guard let settings else { return }
         processingMealId = meal.id
+        processingError = nil
         let engine = NutritionEngine(modelContext: modelContext)
         do {
             try await engine.processMeal(meal, apiKey: settings.apiKey)
         } catch {
-            // Silently fail — meal stays unprocessed, user can retry
+            processingError = error.localizedDescription
         }
         processingMealId = nil
     }
@@ -469,7 +479,13 @@ struct TodayView: View {
         guard let log = todayLog, let settings else { return }
         let rm = ReminderManager.shared
         rm.reschedule(log: log, settings: settings)
-        rm.updateStreak(hadMealsToday: !log.meals.isEmpty)
+
+        // Streak credit goes to yesterday's completion, not today's current state.
+        // Passing today's meal count would reset the streak every morning before breakfast.
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now
+        let yesterdayLog = try? NutritionEngine(modelContext: modelContext).dayLog(for: yesterday)
+        rm.updateStreak(yesterdayHadMeals: !(yesterdayLog?.meals.isEmpty ?? true))
+
         if settings.geofenceEnabled, let coord = settings.kitchenCoordinate {
             rm.startGeofence(latitude: coord.latitude, longitude: coord.longitude)
         }
@@ -483,6 +499,7 @@ struct TodayView: View {
 
     private func loadBrief(settings: UserSettings) async {
         guard todayBrief == nil, !isGeneratingBrief else { return }
+        // Set flag immediately — before any suspension point — to prevent concurrent calls
         isGeneratingBrief = true
         defer { isGeneratingBrief = false }
         todayBrief = try? await CoachService().generateBriefIfNeeded(
