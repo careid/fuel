@@ -9,17 +9,39 @@ struct FuelApp: App {
 
     init() {
         let schema = Schema(FuelSchemaV4.models)
-        let cloudConfig = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
 
-        // Prefer CloudKit-backed store so data survives app deletion and syncs across devices.
-        // Falls back to local-only if CloudKit isn't available (simulator, no iCloud sign-in, etc.).
-        if let c = try? ModelContainer(for: schema, configurations: cloudConfig) {
+        // Primary: CloudKit-backed store — data lives in iCloud and survives
+        // app deletion / reinstall / device restore.
+        let ckConfig = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
+        if let c = try? ModelContainer(for: schema, configurations: [ckConfig]) {
             container = c
-        } else if let c = try? ModelContainer(for: schema) {
-            container = c
-        } else {
-            fatalError("Cannot open or create the SwiftData store.")
+            return
         }
+
+        // Fallback: local-only store (simulator, no iCloud account, etc.).
+        // Uses an explicit name so it never collides with legacy default.store files.
+        NSLog("[Fuel] CloudKit unavailable, using local store")
+        let appSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask
+        ).first!
+        let storeURL = appSupport.appendingPathComponent("fuel.store")
+        let localConfig = ModelConfiguration(url: storeURL, cloudKitDatabase: .none)
+
+        if let c = try? ModelContainer(for: schema, configurations: [localConfig]) {
+            container = c
+            return
+        }
+
+        // Local store is corrupted or schema-incompatible. Since this is the
+        // non-CloudKit fallback path, there is no user data to preserve here —
+        // wipe and recreate.
+        NSLog("[Fuel] Local store failed to open, wiping and recreating")
+        let base = storeURL.deletingPathExtension()
+        for ext in ["store", "store-wal", "store-shm"] {
+            try? FileManager.default.removeItem(at: base.appendingPathExtension(ext))
+        }
+
+        container = try! ModelContainer(for: schema, configurations: [localConfig])
     }
 
     var body: some Scene {

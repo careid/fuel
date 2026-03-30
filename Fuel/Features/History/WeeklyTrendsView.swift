@@ -53,6 +53,22 @@ struct WeeklyTrendsView: View {
         }
     }
 
+    // Today's data — shown as ghost marks on charts but excluded from trend calculations.
+    private var todayDayLog: DayLog? {
+        let today = DayLog.dateFormatter.string(from: .now)
+        return allDays.first { $0.dateString == today }
+    }
+
+    private var todaySnapshot: HealthSnapshot? {
+        snapshotsByDate[DayLog.dateFormatter.string(from: .now)]
+    }
+
+    private var todayNetCalEntry: (date: Date, netCal: Int)? {
+        guard let log = todayDayLog else { return nil }
+        let active = todaySnapshot?.activeCalories ?? 0
+        return (.now, log.totalCalories - (calorieTarget + active))
+    }
+
     var body: some View {
         ScrollView {
             if recentDays.isEmpty {
@@ -96,6 +112,15 @@ struct WeeklyTrendsView: View {
                     .cornerRadius(4)
                 }
 
+                if let today = todayNetCalEntry {
+                    BarMark(
+                        x: .value("Date", today.date, unit: .day),
+                        y: .value("Net Calories", today.netCal)
+                    )
+                    .foregroundStyle((today.netCal > 0 ? Color.orange : Color.green).opacity(0.35))
+                    .cornerRadius(4)
+                }
+
                 RuleMark(y: .value("Break Even", 0))
                     .foregroundStyle(.secondary.opacity(0.6))
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
@@ -117,6 +142,15 @@ struct WeeklyTrendsView: View {
                         y: .value("Protein (g)", day.totalProtein)
                     )
                     .foregroundStyle(FuelTheme.progressColor(ratio: day.totalProtein / Double(proteinTarget)))
+                    .cornerRadius(4)
+                }
+
+                if let todayLog = todayDayLog {
+                    BarMark(
+                        x: .value("Date", Date.now, unit: .day),
+                        y: .value("Protein (g)", todayLog.totalProtein)
+                    )
+                    .foregroundStyle(FuelTheme.progressColor(ratio: todayLog.totalProtein / Double(proteinTarget)).opacity(0.35))
                     .cornerRadius(4)
                 }
 
@@ -147,6 +181,15 @@ struct WeeklyTrendsView: View {
                         y: .value("Steps", entry.steps)
                     )
                     .foregroundStyle(.green.opacity(0.75))
+                    .cornerRadius(4)
+                }
+
+                if let snap = todaySnapshot, let steps = snap.steps {
+                    BarMark(
+                        x: .value("Date", Date.now, unit: .day),
+                        y: .value("Steps", steps)
+                    )
+                    .foregroundStyle(Color.green.opacity(0.3))
                     .cornerRadius(4)
                 }
 
@@ -185,6 +228,16 @@ struct WeeklyTrendsView: View {
                     )
                     .foregroundStyle(.indigo)
                     .interpolationMethod(.catmullRom)
+                    .symbol(Circle().strokeBorder(lineWidth: 2))
+                    .symbolSize(40)
+                }
+
+                if let snap = todaySnapshot, let hours = snap.sleepHours {
+                    PointMark(
+                        x: .value("Date", Date.now, unit: .day),
+                        y: .value("Sleep (h)", hours)
+                    )
+                    .foregroundStyle(Color.indigo.opacity(0.35))
                     .symbol(Circle().strokeBorder(lineWidth: 2))
                     .symbolSize(40)
                 }
