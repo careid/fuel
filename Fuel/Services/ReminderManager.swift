@@ -167,11 +167,14 @@ final class ReminderManager: NSObject, ObservableObject {
     /// Call on each foreground with whether YESTERDAY had logged meals.
     /// Increments the streak if yesterday was logged; resets only if a full
     /// calendar day passed without logs. Today's in-progress state is irrelevant.
-    func updateStreak(yesterdayHadMeals: Bool) {
+    /// Excluded (sick / travel / other) days are neutral — they neither extend
+    /// nor reset the streak.
+    func updateStreak(yesterdayHadMeals: Bool, yesterdayExcluded: Bool = false) {
         let today = DayLog.dateFormatter.string(from: .now)
         let lastDate = UserDefaults.standard.string(forKey: streakDateKey) ?? ""
         guard today != lastDate else { return }
         UserDefaults.standard.set(today, forKey: streakDateKey)
+        if yesterdayExcluded { return }
         loggingStreak = yesterdayHadMeals ? loggingStreak + 1 : 0
     }
 

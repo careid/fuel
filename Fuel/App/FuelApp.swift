@@ -8,7 +8,7 @@ struct FuelApp: App {
     let container: ModelContainer
 
     init() {
-        let schema = Schema(FuelSchemaV4.models)
+        let schema = Schema(FuelSchemaV5.models)
 
         // Primary: CloudKit-backed store — data lives in iCloud and survives
         // app deletion / reinstall / device restore.

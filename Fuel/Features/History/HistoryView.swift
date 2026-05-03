@@ -7,6 +7,7 @@ private enum HistoryTab: String, CaseIterable {
 }
 
 struct HistoryView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \DayLog.dateString, order: .reverse) private var allDays: [DayLog]
     @Query(sort: \HealthSnapshot.dateString, order: .reverse) private var allSnapshots: [HealthSnapshot]
     @Query private var settingsArr: [UserSettings]
@@ -127,14 +128,17 @@ struct HistoryView: View {
                         let dateStr = DayLog.dateFormatter.string(from: date)
                         let dayLog = daysByDateString[dateStr]
                         let isToday = Calendar.current.isDateInToday(date)
+                        let isExcluded = dayLog?.isExcluded ?? false
 
                         if let dayLog {
                             NavigationLink(destination: DayDetailView(dayLog: dayLog)) {
-                                calendarCell(date: date, hasData: true, isToday: isToday)
+                                calendarCell(date: date, hasData: true, isToday: isToday, isExcluded: isExcluded)
                             }
                             .buttonStyle(.plain)
+                            .contextMenu { exclusionMenu(for: date, current: dayLog) }
                         } else {
-                            calendarCell(date: date, hasData: false, isToday: isToday)
+                            calendarCell(date: date, hasData: false, isToday: isToday, isExcluded: false)
+                                .contextMenu { exclusionMenu(for: date, current: nil) }
                         }
                     } else {
                         Color.clear.aspectRatio(1, contentMode: .fit)
@@ -144,7 +148,7 @@ struct HistoryView: View {
         }
     }
 
-    private func calendarCell(date: Date, hasData: Bool, isToday: Bool) -> some View {
+    private func calendarCell(date: Date, hasData: Bool, isToday: Bool, isExcluded: Bool) -> some View {
         let day = Calendar.current.component(.day, from: date)
         return VStack(spacing: 3) {
             Text("\(day)")
@@ -152,19 +156,57 @@ struct HistoryView: View {
                 .fontWeight(isToday ? .bold : .regular)
                 .foregroundStyle(
                     isToday ? .white
+                    : isExcluded ? FuelTheme.textSecondary
                     : (hasData ? FuelTheme.textPrimary : FuelTheme.textSecondary.opacity(0.5))
                 )
 
-            Circle()
-                .fill(hasData && !isToday ? FuelTheme.calorieColor : Color.clear)
-                .frame(width: 4, height: 4)
+            if isExcluded {
+                Image(systemName: "moon.zzz.fill")
+                    .font(.system(size: 7))
+                    .foregroundStyle(FuelTheme.textSecondary)
+            } else {
+                Circle()
+                    .fill(hasData && !isToday ? FuelTheme.calorieColor : Color.clear)
+                    .frame(width: 4, height: 4)
+            }
         }
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isToday ? FuelTheme.calorieColor : (hasData ? FuelTheme.calorieColor.opacity(0.1) : Color.clear))
+                .fill(
+                    isToday ? FuelTheme.calorieColor
+                    : isExcluded ? FuelTheme.textSecondary.opacity(0.12)
+                    : (hasData ? FuelTheme.calorieColor.opacity(0.1) : Color.clear)
+                )
         )
+    }
+
+    @ViewBuilder
+    private func exclusionMenu(for date: Date, current: DayLog?) -> some View {
+        if current?.isExcluded == true {
+            Button("Clear sick/travel mark", systemImage: "checkmark.circle") {
+                setExclusion(date: date, reason: nil)
+            }
+        } else {
+            Button("Mark as sick", systemImage: "thermometer.medium") {
+                setExclusion(date: date, reason: "sick")
+            }
+            Button("Mark as travel", systemImage: "airplane") {
+                setExclusion(date: date, reason: "travel")
+            }
+            Button("Mark as other off-day", systemImage: "moon.zzz") {
+                setExclusion(date: date, reason: "other")
+            }
+        }
+    }
+
+    private func setExclusion(date: Date, reason: String?) {
+        let engine = NutritionEngine(modelContext: modelContext)
+        guard let log = try? engine.dayLogOrCreate(for: date) else { return }
+        log.isExcluded = reason != nil
+        log.exclusionReason = reason
+        try? modelContext.save()
     }
 
     private var recentList: some View {

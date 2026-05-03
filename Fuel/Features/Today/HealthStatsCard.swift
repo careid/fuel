@@ -52,10 +52,13 @@ struct HealthStatsCard: View {
             tiles.append(Tile(icon: "figure.walk",     label: "Steps",      value: steps.formatted(),               color: .green))
         }
         if let cal = snapshot.activeCalories {
-            tiles.append(Tile(icon: "flame.fill",      label: "Active Cal", value: "\(cal) cal",                    color: .orange))
+            let suffix = snapshot.activeCaloriesEstimated ? " · est." : ""
+            tiles.append(Tile(icon: "flame.fill",      label: "Active Cal", value: "\(cal) cal\(suffix)",           color: .orange))
         }
         if let lbs = snapshot.weightLbs {
-            tiles.append(Tile(icon: "scalemass.fill",  label: "Weight",     value: String(format: "%.1f lb", lbs),  color: .blue))
+            let staleness = weightStalenessLabel()
+            let value = staleness.map { "\(String(format: "%.1f lb", lbs)) · \($0)" } ?? String(format: "%.1f lb", lbs)
+            tiles.append(Tile(icon: "scalemass.fill",  label: "Weight",     value: value,                            color: .blue))
         }
         if let rhr = snapshot.restingHeartRate {
             tiles.append(Tile(icon: "heart.fill",      label: "Resting HR", value: "\(Int(rhr)) bpm",               color: .red))
@@ -66,6 +69,24 @@ struct HealthStatsCard: View {
         }
 
         return tiles
+    }
+
+    // Returns nil when the weight was measured on the snapshot's own date
+    // (i.e. fresh), or "yesterday" / "Nd ago" when the latest sample is older.
+    private func weightStalenessLabel() -> String? {
+        guard let measuredAt = snapshot.weightMeasuredAt,
+              let snapDate = HealthSnapshot.dateFormatter.date(from: snapshot.dateString) else {
+            return nil
+        }
+        let cal = Calendar.current
+        let measuredDay = cal.startOfDay(for: measuredAt)
+        let snapDay = cal.startOfDay(for: snapDate)
+        let days = cal.dateComponents([.day], from: measuredDay, to: snapDay).day ?? 0
+        switch days {
+        case ..<1: return nil
+        case 1:    return "yesterday"
+        default:   return "\(days)d ago"
+        }
     }
 
     private func statTile(_ tile: Tile) -> some View {

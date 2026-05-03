@@ -484,7 +484,10 @@ struct TodayView: View {
         // Passing today's meal count would reset the streak every morning before breakfast.
         let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now) ?? .now
         let yesterdayLog = try? NutritionEngine(modelContext: modelContext).dayLog(for: yesterday)
-        rm.updateStreak(yesterdayHadMeals: !(yesterdayLog?.meals.isEmpty ?? true))
+        rm.updateStreak(
+            yesterdayHadMeals: !(yesterdayLog?.meals.isEmpty ?? true),
+            yesterdayExcluded: yesterdayLog?.isExcluded ?? false
+        )
 
         if settings.geofenceEnabled, let coord = settings.kitchenCoordinate {
             rm.startGeofence(latitude: coord.latitude, longitude: coord.longitude)

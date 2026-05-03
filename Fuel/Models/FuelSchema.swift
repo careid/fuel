@@ -36,15 +36,30 @@ enum FuelSchemaV4: VersionedSchema {
     }
 }
 
+// MARK: - V5 Schema
+// Adds DayLog.isExcluded / exclusionReason (sick-day exclusion),
+// HealthSnapshot.weightMeasuredAt (distinguishes stale weight from fresh),
+// and HealthSnapshot.activeCaloriesEstimated (step-based fallback flag).
+
+enum FuelSchemaV5: VersionedSchema {
+    static var versionIdentifier = Schema.Version(5, 0, 0)
+    static var models: [any PersistentModel.Type] {
+        [DayLog.self, Meal.self, FoodItem.self, UserSettings.self, HealthSnapshot.self, DailyBrief.self, Workout.self]
+    }
+}
+
 // MARK: - Migration Plan
 
 enum FuelMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [FuelSchemaV1.self, FuelSchemaV2.self, FuelSchemaV3.self, FuelSchemaV4.self] }
+    static var schemas: [any VersionedSchema.Type] {
+        [FuelSchemaV1.self, FuelSchemaV2.self, FuelSchemaV3.self, FuelSchemaV4.self, FuelSchemaV5.self]
+    }
     static var stages: [MigrationStage] {
         [
             .lightweight(fromVersion: FuelSchemaV1.self, toVersion: FuelSchemaV2.self),
             .lightweight(fromVersion: FuelSchemaV2.self, toVersion: FuelSchemaV3.self),
             .lightweight(fromVersion: FuelSchemaV3.self, toVersion: FuelSchemaV4.self),
+            .lightweight(fromVersion: FuelSchemaV4.self, toVersion: FuelSchemaV5.self),
         ]
     }
 }

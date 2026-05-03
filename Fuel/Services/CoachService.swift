@@ -62,6 +62,13 @@ final class CoachService {
         snapDescriptor.fetchLimit = 14
         let recentSnaps = (try? modelContext.fetch(snapDescriptor)) ?? []
 
+        // Excluded days (sick / travel / other) are dropped from every trend
+        // and average — they shouldn't bias the picture. The matching health
+        // snapshots are also dropped so e.g. sick-day sleep doesn't skew avgs.
+        let excludedDates = Set(recentLogs.filter { $0.isExcluded }.map { $0.dateString })
+        let includedLogs = recentLogs.filter { !$0.isExcluded }
+        let includedSnaps = recentSnaps.filter { !excludedDates.contains($0.dateString) }
+
         // Yesterday's data
         let yesterday = cal.date(byAdding: .day, value: -1, to: today)!
         let yesterdayString = DayLog.dateFormatter.string(from: yesterday)
@@ -69,21 +76,21 @@ final class CoachService {
         let yesterdaySnap = recentSnaps.first { $0.dateString == yesterdayString }
 
         // 14-day averages
-        let logsWithMeals = recentLogs.filter { !$0.meals.isEmpty }
+        let logsWithMeals = includedLogs.filter { !$0.meals.isEmpty }
         let avgCalories = logsWithMeals.isEmpty ? 0 :
             Double(logsWithMeals.reduce(0) { $0 + $1.totalCalories }) / Double(logsWithMeals.count)
         let avgProtein = logsWithMeals.isEmpty ? 0 :
             logsWithMeals.reduce(0.0) { $0 + $1.totalProtein } / Double(logsWithMeals.count)
 
-        let snapsWithSleep = recentSnaps.filter { $0.sleepHours != nil }
+        let snapsWithSleep = includedSnaps.filter { $0.sleepHours != nil }
         let avgSleep: Double? = snapsWithSleep.isEmpty ? nil :
             snapsWithSleep.reduce(0.0) { $0 + ($1.sleepHours ?? 0) } / Double(snapsWithSleep.count)
 
-        let loggingPct = recentLogs.isEmpty ? 0 :
-            Int(Double(logsWithMeals.count) / Double(recentLogs.count) * 100)
+        let loggingPct = includedLogs.isEmpty ? 0 :
+            Int(Double(logsWithMeals.count) / Double(includedLogs.count) * 100)
 
         // Weight trend (simple linear: compare first half vs second half of window)
-        let snapsWithWeight = recentSnaps.filter { $0.weightLbs != nil }
+        let snapsWithWeight = includedSnaps.filter { $0.weightLbs != nil }
         let latestWeight = snapsWithWeight.first?.weightLbs
         var weightTrend: Double? = nil
         if snapsWithWeight.count >= 4 {

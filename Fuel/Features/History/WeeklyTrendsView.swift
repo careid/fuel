@@ -24,21 +24,26 @@ struct WeeklyTrendsView: View {
             .sorted { $0.dateString < $1.dateString }
     }
 
-    private var last7Days: [DayLog] { Array(recentDays.suffix(7)) }
+    // Days that count toward averages and trend lines. Excluded (sick/travel/other)
+    // days are still rendered as faded markers — see chart bodies below.
+    private var includedDays: [DayLog] { recentDays.filter { !$0.isExcluded } }
+    private var excludedDays: [DayLog] { recentDays.filter { $0.isExcluded } }
+
+    private var last7Days: [DayLog] { Array(includedDays.suffix(7)) }
 
     private var snapshotsByDate: [String: HealthSnapshot] {
         Dictionary(allSnapshots.map { ($0.dateString, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private var netCaloriesData: [(date: Date, netCal: Int)] {
-        recentDays.map { day in
+        includedDays.map { day in
             let active = snapshotsByDate[day.dateString]?.activeCalories ?? 0
             return (date: day.date, netCal: day.totalCalories - (calorieTarget + active))
         }
     }
 
     private var stepsData: [(date: Date, steps: Int)] {
-        recentDays.compactMap { day in
+        includedDays.compactMap { day in
             guard let snap = snapshotsByDate[day.dateString],
                   let steps = snap.steps else { return nil }
             return (date: day.date, steps: steps)
@@ -46,7 +51,7 @@ struct WeeklyTrendsView: View {
     }
 
     private var sleepData: [(date: Date, hours: Double)] {
-        recentDays.compactMap { day in
+        includedDays.compactMap { day in
             guard let snap = snapshotsByDate[day.dateString],
                   let hours = snap.sleepHours else { return nil }
             return (date: day.date, hours: hours)
@@ -112,6 +117,22 @@ struct WeeklyTrendsView: View {
                     .cornerRadius(4)
                 }
 
+                ForEach(excludedDays, id: \.dateString) { day in
+                    let active = snapshotsByDate[day.dateString]?.activeCalories ?? 0
+                    let net = day.totalCalories - (calorieTarget + active)
+                    BarMark(
+                        x: .value("Date", day.date, unit: .day),
+                        y: .value("Net Calories", net)
+                    )
+                    .foregroundStyle(.secondary.opacity(0.25))
+                    .cornerRadius(4)
+                    .annotation(position: .top, alignment: .center, spacing: 2) {
+                        Image(systemName: "moon.zzz.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 if let today = todayNetCalEntry {
                     BarMark(
                         x: .value("Date", today.date, unit: .day),
@@ -136,13 +157,27 @@ struct WeeklyTrendsView: View {
     private var proteinChart: some View {
         chartCard(title: "Protein", subtitle: "grams per day") {
             Chart {
-                ForEach(recentDays, id: \.dateString) { day in
+                ForEach(includedDays, id: \.dateString) { day in
                     BarMark(
                         x: .value("Date", day.date, unit: .day),
                         y: .value("Protein (g)", day.totalProtein)
                     )
                     .foregroundStyle(FuelTheme.progressColor(ratio: day.totalProtein / Double(proteinTarget)))
                     .cornerRadius(4)
+                }
+
+                ForEach(excludedDays, id: \.dateString) { day in
+                    BarMark(
+                        x: .value("Date", day.date, unit: .day),
+                        y: .value("Protein (g)", day.totalProtein)
+                    )
+                    .foregroundStyle(.secondary.opacity(0.25))
+                    .cornerRadius(4)
+                    .annotation(position: .top, alignment: .center, spacing: 2) {
+                        Image(systemName: "moon.zzz.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 if let todayLog = todayDayLog {

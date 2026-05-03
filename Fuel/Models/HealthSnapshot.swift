@@ -13,6 +13,14 @@ final class HealthSnapshot {
     var workoutMinutes: Int?
     var workoutCalories: Int?
 
+    // The actual measurement timestamp from HealthKit, so we can tell a fresh
+    // weight from one carried over from days ago (most days the user doesn't weigh in).
+    var weightMeasuredAt: Date?
+
+    // True when activeCalories was filled in from a step-based estimate because
+    // the user wasn't wearing their watch and HealthKit returned little/no data.
+    var activeCaloriesEstimated: Bool = false
+
     var sleepHours: Double? { sleepSeconds.map { Double($0) / 3600.0 } }
     var weightLbs: Double?  { weightKg.map { $0 * 2.20462 } }
 

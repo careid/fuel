@@ -45,14 +45,31 @@ final class HealthDataManager: ObservableObject {
 
         async let steps          = fetchSteps(for: date)
         async let activeCalories = fetchActiveCalories(for: date)
-        async let weight         = fetchLatestWeight(asOf: date)
+        async let weightSample   = fetchLatestWeight(asOf: date)
         async let rhr            = fetchRestingHeartRate(asOf: date)
         async let sleep          = fetchSleep(nightOf: date)
         async let workout        = fetchWorkout(on: date)
 
-        let (s, ac, w, r, sl, wo) = await (steps, activeCalories, weight, rhr, sleep, workout)
+        let (s, acRaw, ws, r, sl, wo) = await (steps, activeCalories, weightSample, rhr, sleep, workout)
 
-        guard s != nil || ac != nil || w != nil || r != nil || sl != nil || wo != nil else { return }
+        guard s != nil || acRaw != nil || ws != nil || r != nil || sl != nil || wo != nil else { return }
+
+        // Step-based active-calorie fallback. When the user isn't wearing the
+        // watch, HealthKit returns no/very low active energy even though steps
+        // came in from the phone. Estimate ~0.04 cal/step scaled by body weight,
+        // and use it when measured cal is missing or implausibly low for the steps.
+        let weightKgForEstimate = ws?.kg ?? 75.0
+        let expected = (s.map(Double.init) ?? 0) * 0.04 * weightKgForEstimate / 70.0
+        let usedFallback: Bool
+        let activeCal: Int?
+        if let s, s > 1000, expected > 0,
+           Double(acRaw ?? 0) < expected * 0.4 {
+            activeCal = Int(expected)
+            usedFallback = true
+        } else {
+            activeCal = acRaw
+            usedFallback = false
+        }
 
         let dateStr = HealthSnapshot.dateFormatter.string(from: date)
         let descriptor = FetchDescriptor<HealthSnapshot>(
@@ -66,11 +83,13 @@ final class HealthDataManager: ObservableObject {
             modelContext.insert(snap)
         }
 
-        snap.steps            = s
-        snap.activeCalories   = ac
-        snap.weightKg         = w
-        snap.restingHeartRate = r
-        snap.sleepSeconds     = sl.map { Int($0) }
+        snap.steps                   = s
+        snap.activeCalories          = activeCal
+        snap.activeCaloriesEstimated = usedFallback
+        snap.weightKg                = ws?.kg
+        snap.weightMeasuredAt        = ws?.measuredAt
+        snap.restingHeartRate        = r
+        snap.sleepSeconds            = sl.map { Int($0) }
 
         if let wo {
             snap.workoutType    = wo.workoutActivityType.name
@@ -130,7 +149,9 @@ final class HealthDataManager: ObservableObject {
         }
     }
 
-    private func fetchLatestWeight(asOf date: Date) async -> Double? {
+    struct WeightSample { let kg: Double; let measuredAt: Date }
+
+    private func fetchLatestWeight(asOf date: Date) async -> WeightSample? {
         await withCheckedContinuation { cont in
             let cal = Calendar.current
             // Use the end of the target day so historical fetches don't show future readings
@@ -139,8 +160,12 @@ final class HealthDataManager: ObservableObject {
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
             let q = HKSampleQuery(sampleType: HKQuantityType(.bodyMass),
                                   predicate: pred, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
-                let kg = (samples?.first as? HKQuantitySample)?.quantity.doubleValue(for: .gramUnit(with: .kilo))
-                cont.resume(returning: kg)
+                guard let sample = samples?.first as? HKQuantitySample else {
+                    cont.resume(returning: nil)
+                    return
+                }
+                let kg = sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
+                cont.resume(returning: WeightSample(kg: kg, measuredAt: sample.endDate))
             }
             store.execute(q)
         }
@@ -165,13 +190,15 @@ final class HealthDataManager: ObservableObject {
     private func fetchSleep(nightOf date: Date) async -> TimeInterval? {
         await withCheckedContinuation { cont in
             let cal = Calendar.current
-            guard let sixPmPrior = cal.date(byAdding: .hour, value: -6,
-                                            to: cal.startOfDay(for: date)) else {
+            let dayStart = cal.startOfDay(for: date)
+            // Window: 6pm prior day → noon of `date`. The previous version ended
+            // at midnight, which truncated every morning's sleep.
+            guard let windowStart = cal.date(byAdding: .hour, value: -6, to: dayStart),
+                  let windowEnd = cal.date(byAdding: .hour, value: 12, to: dayStart) else {
                 cont.resume(returning: nil)
                 return
             }
-            let dayStart = cal.startOfDay(for: date)
-            let pred = HKQuery.predicateForSamples(withStart: sixPmPrior, end: dayStart)
+            let pred = HKQuery.predicateForSamples(withStart: windowStart, end: windowEnd)
             let q = HKSampleQuery(sampleType: HKCategoryType(.sleepAnalysis),
                                   predicate: pred, limit: HKObjectQueryNoLimit,
                                   sortDescriptors: nil) { _, samples, _ in
@@ -179,13 +206,40 @@ final class HealthDataManager: ObservableObject {
                     cont.resume(returning: nil)
                     return
                 }
-                let total = samples
-                    .filter { $0.value != HKCategoryValueSleepAnalysis.inBed.rawValue }
-                    .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
-                cont.resume(returning: total > 0 ? total : nil)
+                cont.resume(returning: Self.totalAsleep(samples))
             }
             store.execute(q)
         }
+    }
+
+    // Positively filter "asleep" stages, then merge overlapping intervals so
+    // duplicate samples (Watch + iPhone, or multiple sleep apps) aren't double-counted.
+    static func totalAsleep(_ samples: [HKCategorySample]) -> TimeInterval? {
+        let asleepValues: Set<Int> = [
+            HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+            HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+            HKCategoryValueSleepAnalysis.asleepREM.rawValue,
+            HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+            HKCategoryValueSleepAnalysis.asleep.rawValue
+        ]
+        let intervals = samples
+            .filter { asleepValues.contains($0.value) }
+            .map { ($0.startDate, $0.endDate) }
+            .sorted { $0.0 < $1.0 }
+
+        guard !intervals.isEmpty else { return nil }
+
+        var merged: [(Date, Date)] = []
+        for (start, end) in intervals {
+            if var last = merged.last, start <= last.1 {
+                last.1 = max(last.1, end)
+                merged[merged.count - 1] = last
+            } else {
+                merged.append((start, end))
+            }
+        }
+        let total = merged.reduce(0.0) { $0 + $1.1.timeIntervalSince($1.0) }
+        return total > 0 ? total : nil
     }
 
     private func fetchWorkout(on date: Date) async -> HKWorkout? {

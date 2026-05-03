@@ -9,6 +9,11 @@ final class DayLog {
     @Relationship(deleteRule: .cascade)
     var workouts: [Workout]
 
+    // Excluded days are omitted from averages, trends, and streaks. Used for
+    // sick days, travel, or other days that shouldn't bias the picture.
+    var isExcluded: Bool = false
+    var exclusionReason: String?  // "sick", "travel", "other"
+
     var totalCalories: Int {
         meals.reduce(0) { $0 + $1.totalCalories }
     }

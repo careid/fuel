@@ -41,6 +41,27 @@ struct DayDetailView: View {
                     Image(systemName: "plus.circle.fill").font(.title2)
                 }
             }
+            ToolbarItem(placement: .secondaryAction) {
+                Menu {
+                    if dayLog.isExcluded {
+                        Button("Clear sick/travel mark", systemImage: "checkmark.circle") {
+                            setExclusion(reason: nil)
+                        }
+                    } else {
+                        Button("Mark as sick", systemImage: "thermometer.medium") {
+                            setExclusion(reason: "sick")
+                        }
+                        Button("Mark as travel", systemImage: "airplane") {
+                            setExclusion(reason: "travel")
+                        }
+                        Button("Mark as other off-day", systemImage: "moon.zzz") {
+                            setExclusion(reason: "other")
+                        }
+                    }
+                } label: {
+                    Image(systemName: dayLog.isExcluded ? "moon.zzz.fill" : "ellipsis.circle")
+                }
+            }
         }
         .sheet(isPresented: $showLogMeal, onDismiss: loadSnapshot) {
             LogMealView(defaultDate: dayLog.date)
@@ -214,5 +235,11 @@ struct DayDetailView: View {
             predicate: #Predicate { $0.dateString == dateStr }
         )
         existingSnapshot = try? modelContext.fetch(descriptor).first
+    }
+
+    private func setExclusion(reason: String?) {
+        dayLog.isExcluded = reason != nil
+        dayLog.exclusionReason = reason
+        try? modelContext.save()
     }
 }
